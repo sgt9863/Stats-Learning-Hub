@@ -67,7 +67,7 @@
 | **prep1/distributions** | o | o | o | o | o | 0 | ✅Iter.8 |
 | prep1/discrete-distributions | o | x | x | o | - | 2 | |
 | prep1/delta-method | o | d | x | o | x | 2.5 | |
-| prep1/crossval | o | x | x | o | x | 3 | |
+| **prep1/crossval** | o | o | o | o | o | 0 | ✅Iter.26 |
 | prep1/correlation | o | d | d | o | - | 1 | |
 | prep1/continuous-distributions | o | x | d | o | - | 1.5 | |
 | prep1/contingency | d | d | d | d | x | 3 | |
@@ -474,3 +474,23 @@
 - 検証: node --check・verify-topics.js パス（85/85）。ブラウザでACF/PACF両状態を描画確認（JSエラー0、PACFがラグ1で切れる図を確認）。内部リンク（arima）実在。✅
 
 **次に深掘りすべきトピック**: `prep1/crossval`（gap 3.0・計算統計）、`prep1/mcmc`（gap 3.0・L1から欠落）、`chemo/pls`（gap 3.0・L5欠落・分析化学）。
+
+## 2026-07-05 — Iter.26
+
+**対象トピック**: `prep1/crossval`（交差検証とモデル選択）
+
+**選定理由**: gap 3.0・計算統計の要。手順（L1）とU字デモ（L4）は良好だが、L2「何を推定しているか」・L3リーク等の前提・L5がまるごと欠落。regularization/overfitting/model-selection から参照される土台。
+
+**埋めた層**
+- **L2（新規）**: 汎化誤差 $\mathrm{Err}=E[L(y,\hat f(x))]$ の推定量として $\mathrm{CV}=\frac1n\sum L(y_i,\hat f_{-\kappa(i)}(x_i))$ を定式化（各点を「見ていないモデル」で予測→楽観バイアスなし）。LOOCV=$k{=}n$。$k$ の選択＝バイアス/分散/計算量トレードオフ（小k悲観、LOOほぼ不偏だが重い、$k{=}5,10$定番）。AIC/BICへリンク。
+- **L3（新規）**: 前提表——前処理をfold内で（リーク回避）／iid（時系列→前向きCol、群→GroupKFold）／層化（不均衡）／選択と評価の分離（nested CV）。
+- **L5（新規）**: CV誤差自体がばらつく→谷を1点で信じない。1-SEルール（最良から1SE以内で最単純）。選択したモデルのCV値は楽観バイアス→入れ子CV/別テストで最終評価。
+- **L4（note強化）**: 「再サンプルで谷が揺れる＝CV誤差のばらつき＝1-SEルールの動機」をnoteに追記し既存デモとL5を接続。
+
+**検算結果（python3 モンテカルロ）**
+- 5分割CVが真テスト誤差を追跡: deg1..7 で CV [1.54,1.56,0.42,0.45,0.61,0.63,2.07] vs 真 [1.52,1.46,0.40,0.44,0.45,0.55,0.65]、両者とも真の次数3で最小。✅
+- $k$のバイアス: $k{=}2$ 誤差平均0.418（悲観）、$k{=}5$ 0.387、$k{=}10$ 0.379、LOO 0.376（ほぼ不偏）。✅
+- LOOの分散はこの設定では必ずしも大きくない（k=5 sd0.112 vs LOO sd0.097）ことも確認し、本文は「LOOは不偏だが高コスト・fold相関」と正確に記述（過度なLOO高分散主張を回避）。✅
+- 検証: node --check・verify-topics.js パス（85/85）。内部リンク（model-selection）実在。✅
+
+**次に深掘りすべきトピック**: `prep1/mcmc`（gap 3.0・L1直感から欠落）、`chemo/pls`（gap 3.0・L5欠落・分析化学）、`doe/ccd`（gap 3.0・実験計画）。
