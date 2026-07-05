@@ -14,7 +14,7 @@
 | prep1/transformations | o | d | d | o | - | 1 | |
 | prep1/timeseries | d | d | d | o | x | 2.5 | |
 | prep1/three-tests | o | x | x | d | x | 3.5 | |
-| prep1/testing | o | x | x | o | o | 2 | |
+| **prep1/testing** | o | o | o | o | o | 0 | ✅Iter.2で深掘り済 |
 | prep1/svm | o | d | d | o | x | 2 | |
 | prep1/survival | o | d | d | d | x | 2.5 | |
 | prep1/sufficiency | o | d | x | x | x | 3.5 | |
@@ -71,7 +71,7 @@
 | prep1/correlation | o | d | d | o | - | 1 | |
 | prep1/continuous-distributions | o | x | d | o | - | 1.5 | |
 | prep1/contingency | d | d | d | d | x | 3 | |
-| prep1/confidence | o | d | x | o | x | 2.5 | |
+| **prep1/confidence** | o | o | o | o | o | 0 | ✅Iter.3で深掘り済 |
 | prep1/conditional-bayes | o | d | x | o | - | 1.5 | |
 | prep1/clustering | o | x | x | d | - | 2.5 | |
 | prep1/clt | o | d | x | o | x | 2.5 | |
@@ -118,3 +118,39 @@
 
 **次に深掘りすべきトピック**
 - 連続回避のため次は regression 以外。候補: (1) `prep1/testing`（検定の土台、L3=前提の明示が薄い／`oxxoo`）を先に固めると検定系トピック群に波及。(2) `prep1/confidence`（CI、L3・L5）。(3) 最大gapの `prep1/mds-ca`(4.5) は+α・周辺なので優先度は中。依存関係を踏まえ **testing → confidence → mle** の順を検討。
+
+## 2026-07-05 — Iter.2
+
+**対象トピック**: `prep1/testing`（仮説検定・第1種/第2種の誤りと検出力）
+
+**選定理由（依存関係優先・連続回避）**: 前回の regression と別トピック。testing は neyman-pearson / three-tests / normal-tests / goodness-of-fit / nonparametric / multiple-comparison など検定系トピック群の土台。初期状態 `oxxoo`（L2の形式化とL3が欠落）。
+
+**埋めた層**
+- **L2（新規）**: p値の定義 $p=P(T\ge t_{\mathrm{obs}}\mid H_0)$ と棄却域を追記。「棄却域を裾に置く理由＝ $H_0$ のもとで最も起こりにくい領域だから」を明示。両側／片側の割り当ても言及。
+- **L3（新規）**: 「帰無分布が正しく求まっていること」が $\alpha$ を保つ前提だと明示。独立性（崩れると $\alpha$ 膨張→混合効果/クラスター頑健）、分布の仮定（正規性・等分散→ノンパラ/並べ替え/ウェルチ、大標本はCLTで緩和）、多重比較（→ボンフェローニ補正）を、崩れた時の影響と代替とセットで記述。頑健性と検出力のトレードオフも追記。
+- **L5（強化）**: 「p値は $H_0$ が正しい確率ではない」「有意でない≠差がない（検出力不足）」「$n$ 大で無意味な差も有意化」→効果量と信頼区間で読む、サンプルサイズ設計へ誘導。
+
+**検算結果**
+- 右片側 p値の定義 $p=P(T\ge t_{\mathrm{obs}}\mid H_0)$、$p<\alpha$ で棄却——標準的定義と整合。✅
+- 前提が崩れると名目 $\alpha$ と実 $\alpha$ が乖離する点、独立性違反で分散過小評価→偽陽性増、多重比較でFWER $=1-(1-\alpha)^m$ 膨張——いずれも整合（<a>multiple-comparison</a>デモと一致）。✅
+- レンダリング: 追加h3×2表示、KaTeXエラー0、内部リンク3本（nonparametric, multiple-comparison, sample-size）すべて実在。デッドリンク0。
+
+**次に深掘りすべきトピック**: 連続回避で testing 以外。`prep1/confidence`（信頼区間、L3・L5が薄い `odxox`）→ 検定と対の推論概念で土台。その後 `prep1/mle`・`prep1/distributions` の L3。
+
+## 2026-07-05 — Iter.3
+
+**対象トピック**: `prep1/confidence`（信頼区間の意味）
+
+**選定理由**: 検定(testing)と対になる推論の土台。初期 `odxox`（L3・L5欠落、L2は式のみ）。
+
+**埋めた層**
+- **L2（強化）**: ピボット量 $T=(\bar x-\mu)/(s/\sqrt n)\sim t_{n-1}$ から $P(-t_{\alpha/2}\le T\le t_{\alpha/2})=1-\alpha$ を $\mu$ について解いて区間を導出、という「なぜ」を追記。分散既知なら $z$。
+- **L3（新規）**: 正規性（崩れると被覆ずれ／大標本はCLTで緩和／小標本+歪みはブートストラップ）、独立性（崩れると SE 過小評価で区間が狭すぎ被覆不足）、外れ値（頑健区間）。区間幅 $\propto s/\sqrt n$、$n$4倍で幅半分・信頼水準↑で幅↑。
+- **L5（新規）**: 信頼区間は検定より情報が多く効果量+不確かさを同時に示す。0を含む/含まないは検定と一致するが、実質判断の鍵は「幅」。$p$ の有無でなく区間の位置と幅で読む。
+
+**検算結果**
+- 区間導出: $-t\le(\bar x-\mu)/(s/\sqrt n)\le t \Rightarrow \bar x-t\,s/\sqrt n\le\mu\le\bar x+t\,s/\sqrt n$。整合。✅
+- 幅 $\propto s/\sqrt n$、$n\times4\Rightarrow$ 幅 $\times1/2$。整合。✅
+- レンダリング: h3×2表示、KaTeXエラー0、リンク（bootstrap）実在。デッドリンク0。
+
+**次に深掘りすべきトピック**: `prep1/mle`（最尤推定、L3=正則条件・L5）、`prep1/distributions`（標本分布の前提）、`prep1/anova1`（ANOVAの前提=正規性・等分散・独立、崩れた時とKruskalWallis代替）。ANOVA系は前提の記述価値が高い。
