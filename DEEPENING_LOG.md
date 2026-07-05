@@ -91,7 +91,7 @@
 | doe/rsm | o | o | x | d | x | 2.5 | |
 | doe/robust | o | x | o | d | - | 1.5 | |
 | doe/d-optimal | o | d | d | o | x | 2 | |
-| doe/ccd | o | x | x | o | x | 3 | |
+| **doe/ccd** | o | o | o | o | o | 0 | ✅Iter.29 |
 | **chemo/pls-da** | o | o | o | o | o | 0 | ✅Iter.20 |
 | **chemo/pls** | o | o | o | o | o | 0 | ✅Iter.28 |
 | chemo/opls-da | o | x | x | d | - | 2.5 | |
@@ -533,3 +533,22 @@
 - 検証: node --check・verify-topics.js パス（85/85）。内部リンク（pca, overfitting, crossval, multiple-regression, multicollinearity）実在。✅
 
 **次に深掘りすべきトピック**: `doe/ccd`（gap 3.0・中心複合計画）、`prep1/contingency`（gap 3.0・L1から）、`math/linearization`（gap 3.5・数学基礎）。
+
+## 2026-07-05 — Iter.29
+
+**対象トピック**: `doe/ccd`（中心複合計画と回転可能性）
+
+**選定理由**: gap 3.0・実験計画（ユーザー関心）。L1直感と配置デモ（L4）は良好だが、L2「2次モデル・なぜ3水準・αの意味」・L3前提・L5（ロックオブフィット）が欠落。RSM群の土台。
+
+**埋めた層**
+- **L2（新規）**: 2次モデル $\hat y=\beta_0+\sum\beta_ix_i+\sum\beta_{ii}x_i^2+\sum\beta_{ij}x_ix_j$、2乗項推定に3水準必要→軸点・中心点の存在理由。回転可能性の中身＝半径一定で予測分散一定（数値: α=√2で円周上0.281一定、α=1で0.31〜0.50）。総回数 $2^k+2k+n_c$。
+- **L3（新規）**: 前提表——2次近似の妥当性／箱型領域（制約→D最適）／中心点反復（純誤差）／$\pm\alpha$の設定可否（→面心CCD）。
+- **L5（新規）**: 中心点反復→純誤差→ロックオブフィット検定。2乗項有意＝内部に最適点。統計的曲率≠実質的重要（反復増で微小曲率も有意）。回転可能性は設計性質で結果保証ではない。
+- **L4（既存デモ活用）**: αで配置が変わる・面心との違いをL2の回転可能性と接続。
+
+**検算結果（python3 独立実装）**
+- 回転可能α=$(2^k)^{1/4}$: k=2→1.414, k=3→1.682, k=4→2.000。回数 $2^k+2k+4$: 12/18/28。✅
+- 回転可能性: 2次設計行列でα=√2は半径1円周上の予測分散が全点0.2812（spread 0）、α=1は0.3125〜0.5000（spread 0.1875）＝向きで精度変動。✅
+- 検証: node --check・verify-topics.js パス（85/85）。内部リンク（multiple-regression, d-optimal）実在。✅
+
+**次に深掘りすべきトピック**: `prep1/contingency`（gap 3.0・L1から薄い）、`math/linearization`（gap 3.5・数学基礎）、`math/gradient`（gap 3.0）。
