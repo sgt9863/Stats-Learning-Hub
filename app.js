@@ -201,6 +201,169 @@ const Stats = window.Stats = {
     if (k < 0) return 0;
     return Math.exp(k * Math.log(lam) - lam - Stats.lgamma(k + 1));
   },
+
+  /* ---------- 線形代数（重回帰・PCA・PLS 用） ---------- */
+  zeros(r, c) { const m = []; for (let i = 0; i < r; i++) m.push(new Array(c).fill(0)); return m; },
+  transpose(A) {
+    const r = A.length, c = A[0].length, T = Stats.zeros(c, r);
+    for (let i = 0; i < r; i++) for (let j = 0; j < c; j++) T[j][i] = A[i][j];
+    return T;
+  },
+  matmul(A, B) {
+    const r = A.length, k = B.length, c = B[0].length;
+    const C = Stats.zeros(r, c);
+    for (let i = 0; i < r; i++) for (let t = 0; t < k; t++) {
+      const a = A[i][t];
+      if (a === 0) continue;
+      for (let j = 0; j < c; j++) C[i][j] += a * B[t][j];
+    }
+    return C;
+  },
+  matvec(A, x) { return A.map(row => row.reduce((s, v, j) => s + v * x[j], 0)); },
+  dot(a, b) { let s = 0; for (let i = 0; i < a.length; i++) s += a[i] * b[i]; return s; },
+  norm(a) { return Math.sqrt(Stats.dot(a, a)); },
+  // 連立一次方程式 A x = b（ガウス消去・部分ピボット）
+  solve(A, b) {
+    const n = A.length;
+    const M = A.map((row, i) => row.concat([b[i]]));
+    for (let col = 0; col < n; col++) {
+      let piv = col;
+      for (let r = col + 1; r < n; r++) if (Math.abs(M[r][col]) > Math.abs(M[piv][col])) piv = r;
+      const tmp = M[col]; M[col] = M[piv]; M[piv] = tmp;
+      const d = M[col][col] || 1e-12;
+      for (let j = col; j <= n; j++) M[col][j] /= d;
+      for (let r = 0; r < n; r++) {
+        if (r === col) continue;
+        const f = M[r][col];
+        if (f === 0) continue;
+        for (let j = col; j <= n; j++) M[r][j] -= f * M[col][j];
+      }
+    }
+    return M.map(row => row[n]);
+  },
+  inverse(A) {
+    const n = A.length;
+    const M = A.map((row, i) => row.concat(Array.from({ length: n }, (_, j) => (i === j ? 1 : 0))));
+    for (let col = 0; col < n; col++) {
+      let piv = col;
+      for (let r = col + 1; r < n; r++) if (Math.abs(M[r][col]) > Math.abs(M[piv][col])) piv = r;
+      const tmp = M[col]; M[col] = M[piv]; M[piv] = tmp;
+      const d = M[col][col] || 1e-12;
+      for (let j = 0; j < 2 * n; j++) M[col][j] /= d;
+      for (let r = 0; r < n; r++) {
+        if (r === col) continue;
+        const f = M[r][col];
+        if (f === 0) continue;
+        for (let j = 0; j < 2 * n; j++) M[r][j] -= f * M[col][j];
+      }
+    }
+    return M.map(row => row.slice(n));
+  },
+  // 対称行列の固有値分解（ヤコビ法）。{ values:[], vectors:[[...]] 列が固有ベクトル }
+  eigSym(Ain) {
+    const n = Ain.length;
+    const A = Ain.map(r => r.slice());
+    const V = Stats.zeros(n, n);
+    for (let i = 0; i < n; i++) V[i][i] = 1;
+    for (let sweep = 0; sweep < 100; sweep++) {
+      let off = 0;
+      for (let p = 0; p < n; p++) for (let q = p + 1; q < n; q++) off += A[p][q] * A[p][q];
+      if (off < 1e-18) break;
+      for (let p = 0; p < n; p++) {
+        for (let q = p + 1; q < n; q++) {
+          if (Math.abs(A[p][q]) < 1e-300) continue;
+          const app = A[p][p], aqq = A[q][q], apq = A[p][q];
+          const phi = 0.5 * Math.atan2(2 * apq, aqq - app);
+          const c = Math.cos(phi), s = Math.sin(phi);
+          for (let k = 0; k < n; k++) {
+            const akp = A[k][p], akq = A[k][q];
+            A[k][p] = c * akp - s * akq;
+            A[k][q] = s * akp + c * akq;
+          }
+          for (let k = 0; k < n; k++) {
+            const apk = A[p][k], aqk = A[q][k];
+            A[p][k] = c * apk - s * aqk;
+            A[q][k] = s * apk + c * aqk;
+          }
+          for (let k = 0; k < n; k++) {
+            const vkp = V[k][p], vkq = V[k][q];
+            V[k][p] = c * vkp - s * vkq;
+            V[k][q] = s * vkp + c * vkq;
+          }
+        }
+      }
+    }
+    const idx = Array.from({ length: n }, (_, i) => i).sort((a, b) => A[b][b] - A[a][a]);
+    return {
+      values: idx.map(i => A[i][i]),
+      vectors: idx.map(i => V.map(row => row[i])), // vectors[k] = k番目の固有ベクトル
+    };
+  },
+  colMeans(X) {
+    const n = X.length, p = X[0].length, m = new Array(p).fill(0);
+    for (const row of X) for (let j = 0; j < p; j++) m[j] += row[j];
+    return m.map(v => v / n);
+  },
+  center(X) {
+    const m = Stats.colMeans(X);
+    return { Xc: X.map(row => row.map((v, j) => v - m[j])), mean: m };
+  },
+  covMatrix(X) {
+    const { Xc } = Stats.center(X);
+    const n = X.length;
+    const C = Stats.matmul(Stats.transpose(Xc), Xc);
+    return C.map(row => row.map(v => v / (n - 1)));
+  },
+  // PLS1/PLS2 回帰（NIPALS）。X(n×p), Y(n×m) は中心化済み前提でなくてもよい。
+  // 返り値: { T(スコア n×a), W, P, Q, B(回帰係数 p×m), xmean, ymean }
+  plsNipals(X0, Y0, ncomp) {
+    const n = X0.length, p = X0[0].length, m = Y0[0].length;
+    const xm = Stats.colMeans(X0), ym = Stats.colMeans(Y0);
+    let X = X0.map(r => r.map((v, j) => v - xm[j]));
+    let Y = Y0.map(r => r.map((v, j) => v - ym[j]));
+    const T = [], W = [], P = [], Q = [];
+    for (let a = 0; a < ncomp; a++) {
+      // 最大分散の Y 列で u を初期化
+      let u = Y.map(r => r[0]);
+      let w = new Array(p).fill(0), t = new Array(n).fill(0), q = new Array(m).fill(0);
+      for (let it = 0; it < 100; it++) {
+        // w ∝ Xᵀu
+        w = new Array(p).fill(0);
+        for (let i = 0; i < n; i++) for (let j = 0; j < p; j++) w[j] += X[i][j] * u[i];
+        const wn = Stats.norm(w) || 1; w = w.map(v => v / wn);
+        // t = X w
+        t = X.map(row => Stats.dot(row, w));
+        // q ∝ Yᵀt
+        q = new Array(m).fill(0);
+        const tt = Stats.dot(t, t) || 1e-12;
+        for (let i = 0; i < n; i++) for (let j = 0; j < m; j++) q[j] += Y[i][j] * t[i];
+        q = q.map(v => v / tt);
+        // u = Y q / (qᵀq)
+        const qq = Stats.dot(q, q) || 1e-12;
+        const unew = Y.map(row => Stats.dot(row, q) / qq);
+        let diff = 0; for (let i = 0; i < n; i++) diff += (unew[i] - u[i]) ** 2;
+        u = unew;
+        if (diff < 1e-12) break;
+      }
+      const tt = Stats.dot(t, t) || 1e-12;
+      // p_load = Xᵀt / (tᵀt)
+      const pld = new Array(p).fill(0);
+      for (let i = 0; i < n; i++) for (let j = 0; j < p; j++) pld[j] += X[i][j] * t[i];
+      for (let j = 0; j < p; j++) pld[j] /= tt;
+      // デフレーション
+      for (let i = 0; i < n; i++) {
+        for (let j = 0; j < p; j++) X[i][j] -= t[i] * pld[j];
+        for (let j = 0; j < m; j++) Y[i][j] -= t[i] * q[j];
+      }
+      T.push(t); W.push(w); P.push(pld); Q.push(q);
+    }
+    // 回帰係数 B = W (PᵀW)⁻¹ Qᵀ
+    const Wm = Stats.transpose(W), Pm = Stats.transpose(P), Qm = Stats.transpose(Q); // p×a, p×a, m×a
+    const PtW = Stats.matmul(Stats.transpose(Pm), Wm); // a×a
+    const PtWinv = Stats.inverse(PtW);
+    const B = Stats.matmul(Stats.matmul(Wm, PtWinv), Stats.transpose(Qm)); // p×m
+    return { T: Stats.transpose(T), W: Wm, P: Pm, Q: Qm, B, xmean: xm, ymean: ym };
+  },
 };
 
 /* ---------- Canvas 描画ヘルパー ---------- */
@@ -479,22 +642,30 @@ const Plot = window.Plot = {
 /* ---------- セクション定義 ---------- */
 const SECTIONS = [
   {
+    id: 'math', icon: '📐', title: '数学の基礎',
+    desc: '高校数学（数III）から、統計を理解するのに要る線形代数と微分だけを、図で最短でつかむ。',
+  },
+  {
     id: 'prep1', icon: '📘', title: '準1級 統計理論',
-    desc: '確率分布・推定・検定・ベイズなど、2級から準1級への橋渡しとなる核心理論。',
+    desc: '確率分布・推定・検定・回帰・多変量・実験計画まで、統計検定準1級の出題範囲を一通り。',
   },
   {
-    id: 'doe', icon: '🧪', title: '実験計画法',
-    desc: 'フィッシャーの3原則から分散分析・直交表・応答曲面まで、少ない実験で最大の情報を得る方法論。',
+    id: 'doe', icon: '🧪', title: '実験計画法（応用）',
+    desc: '準1級の範囲を超えた応用。応答曲面法・中心複合計画・最適計画で、少ない実験から最適条件を攻める。',
   },
   {
-    id: 'ml', icon: '🤖', title: '機械学習',
-    desc: '回帰・分類・クラスタリングの基礎と、過学習・交差検証という実務の要点。',
-  },
-  {
-    id: 'mva', icon: '📊', title: '多変量解析',
-    desc: '主成分分析・因子分析・判別分析など、多変数データの構造を見抜く手法群。',
+    id: 'chemo', icon: '🧬', title: 'ケモメトリクス',
+    desc: '準1級の範囲外。多成分データを扱う PLS 回帰・PLS-DA・OPLS-DA。分光/クロマトの品質管理の主役。',
   },
 ];
+
+/* 各セクション内の小分類（表示順）。topic.group がこの順で見出し表示される。 */
+const SUBSECTIONS = {
+  math: ['線形代数', '微分と最適化'],
+  prep1: ['確率と分布', '推定', '検定', 'ベイズ', '回帰分析', '多変量解析', '分散分析と実験計画（範囲内）', '時系列'],
+  doe: [],
+  chemo: [],
+};
 
 window.STATS_TOPICS = window.STATS_TOPICS || [];
 
@@ -505,8 +676,11 @@ const demoState = { topic: null, params: {} };
 function topicsBySection(id) { return window.STATS_TOPICS.filter(t => t.section === id); }
 function findTopic(sec, id) { return window.STATS_TOPICS.find(t => t.section === sec && t.id === id) || null; }
 function allTopicsOrdered() {
+  // ナビ（小分類つき）と同じ並びで prev/next をたどれるようにする
   const out = [];
-  for (const s of SECTIONS) out.push.apply(out, topicsBySection(s.id));
+  for (const s of SECTIONS) {
+    for (const grp of groupsOf(s.id)) out.push.apply(out, grp.topics);
+  }
   return out;
 }
 
@@ -546,17 +720,39 @@ function render() {
   window.scrollTo(0, 0);
 }
 
+function groupsOf(sectionId) {
+  // SUBSECTIONS の順を優先しつつ、未登録の group は登場順で末尾に足す
+  const list = topicsBySection(sectionId);
+  const order = (SUBSECTIONS[sectionId] || []).slice();
+  const seen = new Set(order);
+  for (const t of list) {
+    const g = t.group || '';
+    if (g && !seen.has(g)) { order.push(g); seen.add(g); }
+  }
+  const hasUngrouped = list.some(t => !t.group);
+  const groups = [];
+  if (hasUngrouped) groups.push({ label: '', topics: list.filter(t => !t.group) });
+  for (const g of order) {
+    const topics = list.filter(t => t.group === g);
+    if (topics.length) groups.push({ label: g, topics });
+  }
+  return groups;
+}
+
 function renderNav() {
   const nav = document.getElementById('sidebar');
   let html = '<a class="nav-home' + (state.route.page === 'home' ? ' active' : '') + '" href="#/">🏠 ホーム</a>';
   for (const s of SECTIONS) {
     const list = topicsBySection(s.id);
-    const open = state.route.section === s.id || state.route.page === 'home';
+    const open = state.route.section === s.id;
     html += '<details' + (open ? ' open' : '') + '><summary>' + s.icon + ' ' + s.title +
       ' <span class="count">(' + list.length + ')</span></summary>';
-    for (const t of list) {
-      const active = state.route.page === 'topic' && state.route.section === s.id && state.route.topic === t.id;
-      html += '<a class="nav-link' + (active ? ' active' : '') + '" href="#/' + s.id + '/' + t.id + '">' + t.title + '</a>';
+    for (const grp of groupsOf(s.id)) {
+      if (grp.label) html += '<div class="nav-group">' + grp.label + '</div>';
+      for (const t of grp.topics) {
+        const active = state.route.page === 'topic' && state.route.section === s.id && state.route.topic === t.id;
+        html += '<a class="nav-link' + (active ? ' active' : '') + '" href="#/' + s.id + '/' + t.id + '">' + t.title + '</a>';
+      }
     }
     html += '</details>';
   }
@@ -573,21 +769,24 @@ function homeHtml() {
       '<p>' + s.desc + '</p>' +
       '<span class="card-count">' + list.length + ' トピック</span></a>';
   }).join('');
+  const total = window.STATS_TOPICS.length;
   return '<div class="home">' +
     '<section class="hero">' +
     '<h1>統計学習ハブ <span class="en">Stats Learning Hub</span></h1>' +
-    '<p>統計検定<strong>2級</strong>の知識を土台に、<strong>準1級レベルの統計理論・実験計画法・機械学習・多変量解析</strong>を「動かして」学ぶための教材です。すべてのトピックに、パラメータを操作できるインタラクティブなグラフが付いています。</p>' +
+    '<p>統計検定<strong>2級</strong>の知識を土台に、<strong>数学の基礎（高校数学・数III）</strong>から<strong>準1級の統計理論・実験計画法・ケモメトリクス</strong>までを、図とグラフで直感的に学ぶ教材です。全 ' + total + ' トピック。多くは触って動かせるグラフ、要所は 3D で回して確かめられます。</p>' +
     '<ul class="hero-points">' +
-    '<li>📈 全トピックに触って動かせるグラフ</li>' +
-    '<li>🧭 2級 → 準1級のギャップを埋める構成</li>' +
-    '<li>🔬 スライダーで「式の意味」を体感</li>' +
+    '<li>📐 数IIIの知識で追える線形代数から出発</li>' +
+    '<li>🧭 統計検定準1級の範囲を体系的にカバー</li>' +
+    '<li>🌐 3D応答曲面・PLSスコアなど Plotly で可視化</li>' +
     '</ul></section>' +
     '<section class="cards">' + cards + '</section>' +
     '<section class="howto"><h2>📖 学び方のヒント</h2><ol>' +
-    '<li>各トピックはまず本文を読み、そのあと「インタラクティブ実験」でパラメータを動かして直感をつくります。</li>' +
-    '<li>順番に迷ったら「準1級 統計理論 → 実験計画法 → 多変量解析 → 機械学習」の順がおすすめです。</li>' +
+    '<li><strong>数学の基礎</strong>で行列・固有値・勾配を先につかむと、後の回帰・主成分分析・PLS がぐっと楽になります。</li>' +
+    '<li>準1級対策なら「数学の基礎 → 準1級 統計理論」を中心に。品質管理・分析化学の応用なら「実験計画法（応用）」「ケモメトリクス」へ。</li>' +
     '<li>数式は暗記するより、「パラメータを動かしたときのグラフの変化」とセットで覚えると定着します。</li>' +
-    '</ol></section></div>';
+    '</ol>' +
+    '<p class="howto-note">セクションの分け方：<strong>準1級</strong>は統計検定準1級の出題範囲。<strong>実験計画法（応用）</strong>と<strong>ケモメトリクス</strong>は、範囲が重なる項目は準1級側に置き、ここには準1級範囲外の発展内容だけを収めています。</p>' +
+    '</section></div>';
 }
 
 function topicHtml(t) {
@@ -602,9 +801,14 @@ function topicHtml(t) {
     '<p class="lead">' + t.summary + '</p>' +
     '<div class="body">' + t.body + '</div>';
   if (t.demo) {
-    html += '<section class="demo"><h2>🔬 インタラクティブ実験</h2>' +
+    const isPlotly = !!t.demo.plot;
+    const heading = t.demo.heading || (isPlotly ? '📊 グラフで確かめる' : '🔬 インタラクティブ実験');
+    const view = isPlotly
+      ? '<div id="demo-plot" class="demo-plot"></div>'
+      : '<div class="canvas-wrap"><canvas id="demo-canvas" class="demo-canvas"></canvas></div>';
+    html += '<section class="demo"><h2>' + heading + '</h2>' +
       '<div class="controls" id="demo-controls"></div>' +
-      '<div class="canvas-wrap"><canvas id="demo-canvas" class="demo-canvas"></canvas></div>' +
+      view +
       (t.demo.note ? '<p class="demo-note">' + t.demo.note + '</p>' : '') +
       '</section>';
   }
@@ -693,10 +897,22 @@ function buildDemo(topic) {
 function drawDemo() {
   const t = demoState.topic;
   if (!t || !t.demo) return;
+  const params = Object.assign({}, demoState.params);
+  if (t.demo.plot) {
+    const div = document.getElementById('demo-plot');
+    if (!div) return;
+    try {
+      t.demo.plot(div, params, window.Plotly);
+    } catch (err) {
+      div.innerHTML = '<p style="color:#b42318;padding:14px;font-size:13px">グラフの描画でエラーが発生しました: ' + err.message + '</p>';
+      console.error('[demo:' + t.id + ']', err);
+    }
+    return;
+  }
   const canvas = document.getElementById('demo-canvas');
   if (!canvas) return;
   try {
-    t.demo.draw(canvas, Object.assign({}, demoState.params));
+    t.demo.draw(canvas, params);
   } catch (err) {
     const ctx = canvas.getContext('2d');
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -707,6 +923,34 @@ function drawDemo() {
     console.error('[demo:' + t.id + ']', err);
   }
 }
+
+/* Plotly 共通テーマ。トピック側は PlotlyTheme.layout({...}) と PlotlyTheme.config を使う。 */
+window.PlotlyTheme = {
+  colors: ['#4f6df5', '#e4572e', '#2a9d8f', '#f4a261', '#9b5de5', '#577590'],
+  config: { displayModeBar: false, responsive: true, doubleClick: 'reset' },
+  layout(extra) {
+    const base = {
+      margin: { l: 52, r: 16, t: 18, b: 44 },
+      font: { family: '"Hiragino Sans","Yu Gothic UI",sans-serif', size: 12, color: '#344054' },
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      colorway: window.PlotlyTheme.colors,
+      hovermode: 'closest',
+      showlegend: false,
+      xaxis: { zeroline: false, gridcolor: '#edf0f5', linecolor: '#c7cdd8' },
+      yaxis: { zeroline: false, gridcolor: '#edf0f5', linecolor: '#c7cdd8' },
+    };
+    return Object.assign(base, extra || {});
+  },
+  // 3D シーンの共通見た目
+  scene(extra) {
+    const ax = name => ({ title: name, backgroundcolor: '#f6f7fb', gridcolor: '#dfe3ea', showbackground: true, zerolinecolor: '#c7cdd8' });
+    return Object.assign({
+      xaxis: ax('x'), yaxis: ax('y'), zaxis: ax('z'),
+      camera: { eye: { x: 1.5, y: 1.5, z: 1.1 } },
+    }, extra || {});
+  },
+};
 
 /* ---------- 起動 ---------- */
 let resizeTimer = null;
