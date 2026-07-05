@@ -60,7 +60,7 @@
 | prep1/goodness-of-fit | o | d | x | o | x | 2.5 | |
 | **prep1/glm** | o | o | o | o | o | 0 | ✅Iter.12 |
 | prep1/gauss-markov | o | d | o | x | x | 2.5 | |
-| prep1/fisher-cramer-rao | o | d | x | d | x | 3 | |
+| **prep1/fisher-cramer-rao** | o | o | o | o | o | 0 | ✅Iter.24 |
 | prep1/factor | o | d | d | d | x | 2.5 | |
 | prep1/events-probability | o | d | x | o | - | 1.5 | |
 | prep1/estimator-properties | o | d | x | o | x | 2.5 | |
@@ -433,3 +433,23 @@
 - 境界確認: $\psi\in[-2,2],n\in[40,400]$ でセル確率>0・$G^2$ 有限・ゼロ除算なし。KaTeXエラー0、内部リンク（distributions, glm, odds-ratio, discrete-distributions, contingency）実在。verify-topics.js パス（85/85）。✅
 
 **次に深掘りすべきトピック**: `prep1/fisher-cramer-rao`（gap 3.0・推定論の効率下限）、`prep1/acf-pacf`（gap 3.0・時系列）、`prep1/crossval`（gap 3.0・計算統計）。
+
+## 2026-07-05 — Iter.24
+
+**対象トピック**: `prep1/fisher-cramer-rao`（フィッシャー情報量とクラーメル・ラオの下限）
+
+**選定理由**: gap 3.0・推定論の効率下限。L2は2つの $I(\theta)$ 式と不等式を「提示のみ」で導出理由がなく、L3正則条件・L5がまるごと欠落。MLE/sufficiency/estimator-properties と結ぶ推定論の要。
+
+**埋めた層**
+- **L2（強化）**: 2形が一致する理由＝スコア $U$ の $E[U]=0$（$\int f=1$ の微分）をもう一度微分して $E[U^2]=-E[\partial^2\log f]$。$n$標本で総スコアが和→分散加算で $I_n=nI$。CRLBの導出＝不偏の微分で $\mathrm{Cov}(\hat\theta,U)=1$、コーシー・シュワルツで $V[\hat\theta]\ge1/(nI)$、等号は指数型分布族。
+- **L3（新規）**: 正則条件の表——台が$\theta$非依存（$U(0,\theta)$で破れMLEが下限を下回る）／微分積分交換／不偏（偏りで$(1+b')^2$、縮小推定量は下限未満のMSE）／単一母数（多母数は情報行列の逆）。
+- **L5（新規）**: 下限＝精度の床→標本設計 $n\ge1/[I\cdot\mathrm{SE}^2]$、ベルヌーイは$p=0.5$最悪ケース。漸近正規→ワルドCI $\hat\theta\pm z/\sqrt{nI}$。効率=下限/実分散、50%効率は2倍のデータ。
+- **L4（既存デモ活用）**: ベルヌーイ対数尤度・$nI(p)=n/[p(1-p)]$・CRLB $p(1-p)/n$ のデモが追加L2/L5そのものであることを接続。
+
+**検算結果（python3 独立実装）**
+- 2形の一致（ベルヌーイ $p{=}0.3$）: $E[U]=0$、$E[U^2]=-E[\partial^2]=1/(p(1-p))=4.7619$。✅
+- 下限達成: ベルヌーイ $n{=}50$ で $V[\hat p]=0.00421$ ≈ CRLB $0.00420$、ポアソン $n{=}40$ で $0.0748$ ≈ $0.075$。✅
+- 反例: $U(0,\theta)$ のMLE（不偏化）分散 $\approx\theta^2/[n(n+2)]=0.00227$ ≪ 素朴CRLB $\theta^2/n=0.05$＝正則条件破れ。✅
+- レンダリング: h3×3追加、KaTeXエラー0、内部リンク（confidence）実在。verify-topics.js パス（85/85）。✅
+
+**次に深掘りすべきトピック**: `prep1/acf-pacf`（gap 3.0・時系列の同定）、`prep1/crossval`（gap 3.0・計算統計）、`prep1/mcmc`（gap 3.0・L1から欠落）。

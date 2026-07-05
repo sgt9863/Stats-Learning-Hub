@@ -137,10 +137,28 @@
 <p><strong>フィッシャー情報量</strong> $I(\\theta)$ は、対数尤度が最尤点でどれだけ鋭く尖っているか（曲率）です。</p>
 <p>$$ I(\\theta)=E\\!\\left[\\left(\\frac{\\partial}{\\partial\\theta}\\log f(X\\mid\\theta)\\right)^2\\right]=-E\\!\\left[\\frac{\\partial^2}{\\partial\\theta^2}\\log f(X\\mid\\theta)\\right] $$</p>
 <p>尖っている（曲率が大きい）ほど、少しのパラメータのズレで尤度が大きく落ちる＝データが $\\theta$ を強く特定できる＝情報が多い、ということです。$n$ 個の独立標本では情報は $n$ 倍になります。</p>
+
+<h3>なぜ2つの式が等しいのか</h3>
+<p>鍵は<strong>スコア</strong> $U=\\dfrac{\\partial}{\\partial\\theta}\\log f(X\\mid\\theta)$ の平均がゼロであることです。$\\int f\\,dx=1$ を $\\theta$ で微分すると $\\int\\frac{\\partial f}{\\partial\\theta}dx=\\int U f\\,dx=E[U]=0$。これをもう一度 $\\theta$ で微分すると $E\\!\\left[\\frac{\\partial U}{\\partial\\theta}\\right]+E[U^2]=0$、すなわち</p>
+<p>$$ I(\\theta)=E[U^2]=-E\\!\\left[\\frac{\\partial^2}{\\partial\\theta^2}\\log f\\right] $$</p>
+<p>つまり「スコアの分散（$E[U^2]$、$E[U]=0$ なので分散に等しい）」と「対数尤度の曲率の期待値」が一致するのは偶然でなく、正規化条件 $\\int f=1$ の帰結です。$n$ 標本では総スコアが各観測スコアの<strong>和</strong>で、独立ゆえ分散が足し合わさって $I_n(\\theta)=nI(\\theta)$ になります。</p>
 <h3>クラーメル・ラオの下限</h3>
 <p>どんな不偏推定量も、この情報量が決める限界より分散を小さくできません。</p>
 <p>$$ V[\\hat\\theta]\\ \\ge\\ \\frac{1}{n\\,I(\\theta)}\\quad(\\text{クラーメル・ラオ不等式}) $$</p>
-<p>下限を達成する推定量を<strong>有効推定量</strong>と呼びます。最尤推定量は大標本で漸近的にこの下限を達成し（漸近有効）、$\\hat\\theta \\approx N\\big(\\theta,\\ 1/(nI(\\theta))\\big)$ となります。</p>
+<p><strong>なぜこの下限が出るか</strong>：不偏 $E[\\hat\\theta]=\\theta$ を $\\theta$ で微分すると $\\mathrm{Cov}(\\hat\\theta,U)=1$ が出ます。コーシー・シュワルツの不等式 $\\mathrm{Cov}(\\hat\\theta,U)^2\\le V[\\hat\\theta]\\,V[U]$ に入れると $1\\le V[\\hat\\theta]\\cdot nI(\\theta)$、移項してクラーメル・ラオ不等式が得られます。等号（＝下限達成）はスコアと推定量が線形関係のときだけで、これが指数型分布族で起きます。下限を達成する推定量を<strong>有効推定量</strong>と呼びます。最尤推定量は大標本で漸近的にこの下限を達成し（漸近有効）、$\\hat\\theta \\approx N\\big(\\theta,\\ 1/(nI(\\theta))\\big)$ となります。</p>
+
+<h3>前提条件と、崩れたときの影響</h3>
+<table class="simple">
+<tr><th>前提（正則条件）</th><th>崩れると起きること</th><th>対処・代替</th></tr>
+<tr><td>台（値域）が $\\theta$ に依存しない</td><td>$U(0,\\theta)$ のように端が $\\theta$ で動くと下限が破れる。MLE（最大値）の分散は $\\theta^2/n^2$ 級で下限 $\\theta^2/n$ を大きく下回る</td><td>下限は適用外。順序統計量の分布から直接分散を評価</td></tr>
+<tr><td>微分と積分の交換ができる</td><td>尤度が滑らかでない・スコアが定義できないと $I(\\theta)$ が求まらない</td><td>正則条件を満たすモデルへ・数値的評価</td></tr>
+<tr><td>推定量が不偏</td><td>偏りがあると下限に $(1+b'(\\theta))^2$ が掛かり式が変わる。縮小推定量は<strong>下限より小さいMSE</strong>を達成しうる</td><td>不偏に限らずMSEで比較（バイアス・分散トレードオフ）</td></tr>
+<tr><td>パラメータが1個</td><td>多母数ではスカラーで書けない</td><td>フィッシャー情報<strong>行列</strong>、下限はその逆行列の対角成分</td></tr>
+</table>
+
+<h3>有意性と実質的な意味</h3>
+<p>クラーメル・ラオ下限は「これ以上は精度を上げられない床」なので、<strong>必要な標本数の設計</strong>に直結します。目標の標準誤差 $\\mathrm{SE}$ を達成するには $n\\ge 1/[I(\\theta)\\,\\mathrm{SE}^2]$ が要る、と逆算できます。ベルヌーイでは $I(p)=1/[p(1-p)]$ が $p=0.5$ で最小＝情報が最も少ないので、$p$ が不明なときは $p=0.5$ を最悪ケースにとって $n$ を見積もるのが安全側の定石です。</p>
+<p>また漸近正規性 $\\hat\\theta\\approx N(\\theta,1/(nI))$ が、最尤推定に基づく<a href="#/prep1/confidence">ワルド型信頼区間</a> $\\hat\\theta\\pm z_{\\alpha/2}/\\sqrt{nI(\\hat\\theta)}$ や検定の土台です。実務では推定量の良し悪しを<strong>効率＝下限／実分散</strong>で測ります。効率50%の推定量は、同じ精度を得るのに<strong>2倍のデータ</strong>が要る——「どの推定量を使うか」が標本数・コストにそのまま跳ね返ります。</p>
 <div class="note">下はベルヌーイ（表確率 $p$）の対数尤度。$n$ を増やすと曲線が鋭く尖り、フィッシャー情報 $nI(p)=n/[p(1-p)]$ が増え、クラーメル・ラオ下限 $p(1-p)/n$ が小さくなる様子が同時に見えます。</div>`,
     demo: {
       note: 'n を増やすと対数尤度が鋭くなる＝情報量が増える＝推定の分散下限が下がる。p=0.5付近が最も情報が少なく(分散大)、0や1に寄るほど情報が増えます。',
