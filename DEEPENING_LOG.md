@@ -26,7 +26,7 @@
 | prep1/regression-diagnostics | o | x | o | o | x | 2 | |
 | prep1/random-variables | o | x | x | o | - | 2 | |
 | prep1/principles | d | x | x | o | o | 2.5 | |
-| prep1/pca | o | d | x | d | - | 2 | |
+| **prep1/pca** | o | o | o | o | - | 0 | ✅Iter.6 |
 | prep1/path-analysis | o | d | d | d | x | 2.5 | |
 | prep1/overfitting | o | d | x | o | x | 2.5 | |
 | prep1/orthogonal | o | x | x | d | x | 3.5 | |
@@ -44,7 +44,7 @@
 | prep1/moments-shape | o | x | x | d | - | 2.5 | |
 | prep1/moment-method | o | d | x | x | x | 3.5 | |
 | prep1/model-selection | o | d | x | o | x | 2.5 | |
-| prep1/mle | o | o | x | o | x | 2 | |
+| **prep1/mle** | o | o | o | o | o | 0 | ✅Iter.5 |
 | prep1/missing-data | o | x | d | o | x | 2.5 | |
 | prep1/mgf | o | o | x | o | - | 1 | |
 | prep1/mds-ca | x | x | x | d | x | 4.5 | |
@@ -53,7 +53,7 @@
 | prep1/logistic | o | d | x | d | x | 3 | |
 | prep1/log-linear | o | d | d | x | x | 3 | |
 | prep1/lln | o | d | x | d | - | 2 | |
-| prep1/lda | o | d | x | d | x | 3 | |
+| **prep1/lda** | o | o | o | o | o | 0 | ✅Iter.7 |
 | prep1/kmeans | o | d | x | o | - | 1.5 | |
 | prep1/joint-distribution | o | x | x | d | - | 2.5 | |
 | prep1/interaction | o | d | x | o | - | 1.5 | |
@@ -172,3 +172,25 @@
 - レンダリング: h3×2、KaTeXエラー0、リンク（principles, nonparametric, multiple-comparison）実在。デッドリンク0。
 
 **次に深掘りすべきトピック**: `prep1/mle`（正則条件・不変性・L5）、`prep1/distributions`（標本分布の成立条件）、`prep1/pca`（前提=スケール依存/線形性、標準化の要否、L4接続）。多変量系(pca/lda)はL3・L5が薄く価値高。
+
+## 2026-07-05 — Iter.5-7（推定と多変量の土台）
+
+**Iter.5 `prep1/mle`（最尤推定）** — 初期 `ooxox`
+- L3新規: 正則条件下の性質（一致性・漸近正規性・漸近有効性=CRLB達成・不変性）。破綻例=台がθに依存する $U(0,\theta)$ は標本最大値で下ぶれ。小標本の偏り（正規分散のMLEは $1/n$ で下ぶれ）。モデル誤特定に弱い→頑健/準最尤。
+- L5新規（点推定だけで終わらせない）: $\mathrm{SE}(\hat\theta)\approx1/\sqrt{nI(\hat\theta)}$、信頼区間・尤度比検定と併読。モデル誤りなら「狭い区間で自信満々に間違える」。
+- 検算: $E[X_{(n)}]=n\theta/(n+1)<\theta$（U(0,θ)のMLEは下ぶれ）✅／正規分散MLE $E=\frac{n-1}{n}\sigma^2$ 下ぶれ✅。
+
+**Iter.6 `prep1/pca`（主成分分析）** — 初期 `odxd-`（L5は非該当）
+- L2強化: 「なぜ固有ベクトル」= $\max \boldsymbol w^\top\Sigma\boldsymbol w$ s.t. $\|\boldsymbol w\|=1$ → ラグランジュ → $\Sigma\boldsymbol w=\lambda\boldsymbol w$。math/eigen へリンク。
+- L3新規: スケール依存（標準化/相関行列）、線形性のみ（カーネルPCA）、外れ値敏感（頑健PCA）、「分散大≠有用」（LDA/PLSと対照）。探索的手法で検定ではない旨。
+- 検算: ラグランジュ条件 $\Sigma\boldsymbol w=\lambda\boldsymbol w$、分散=λ ✅。
+
+**Iter.7 `prep1/lda`（線形判別）** — 初期 `odxdx`
+- L2強化: $J(\boldsymbol w)$ 最大化 → 一般化固有値問題 $S_B\boldsymbol w=\lambda S_W\boldsymbol w$、2群解 $\boldsymbol w\propto S_W^{-1}(\bar{\boldsymbol x}_1-\bar{\boldsymbol x}_2)$。
+- L3新規: 等共分散・多変量正規の前提（成立時はベイズ最適線形分類器）、共分散が違えばQDA、非正規ならロジスティック/SVMが頑健（頑健性↔効率）。
+- L5新規: 正解率だけで測らない（不均衡）、ROC/AUC・混同行列・コスト/プライアでしきい値。
+- 検算: 2群フィッシャー解 $\boldsymbol w\propto S_W^{-1}(\bar{\boldsymbol x}_1-\bar{\boldsymbol x}_2)$ ✅。
+
+いずれも node --check OK / KaTeXエラー0 / 内部リンク実在（デッドリンク0）。
+
+**次に深掘りすべきトピック**: `prep1/distributions`（標本分布 t/χ²/F の成立条件・自由度→∞でのt→正規）、`prep1/logistic`（前提=線形性オンロジット・独立、分離時の発散、L5）、`prep1/multiple-regression`（既存L2厚い→L3/L5補強）。
