@@ -15,39 +15,53 @@
 <p>マージンの縁に接する少数の点を<strong>サポートベクター</strong>と呼び、境界はこれらだけで決まります（他の点は動かしても境界は不変）。線形分離できないときは<strong>ソフトマージン</strong>（誤分類を許すスラック）や<strong>カーネル法</strong>（高次元へ写して非線形分離）を使います。<a href="#/prep1/lda">判別分析</a>が分布の仮定に基づくのに対し、SVMは境界そのものを最適化する点が対照的です。</p>
 <div class="note">下で2クラスの離れ具合を動かすと、最大マージン境界（実線）とマージン帯（点線）、縁に乗るサポートベクター（大きい点）が変わります。マージンの内側・縁の点だけが境界を支えていることに注目してください。</div>`,
     demo: {
-      note: 'クラスを近づけるとマージンが狭まり、縁のサポートベクターが増える。境界を支えるのは縁の少数点だけで、遠くの点をいくら動かしても境界は動きません。',
+      note: '境界（実線）は丸で囲んだ最も近い対向点＝サポートベクターの中点に引かれ、再サンプルすると「その2点」に応じて動きます。遠くの点は境界に影響しません。隔たりを狭めると線形分離できなくなり、ソフトマージンが必要になります。',
       controls: [
-        { type: 'range', id: 'gap', label: '2クラスの隔たり', min: 0.5, max: 5, step: 0.2, value: 2.6 },
+        { type: 'range', id: 'gap', label: '2クラスの隔たり', min: 0.5, max: 5, step: 0.2, value: 3.4 },
         { type: 'button', id: 'reseed', label: '再サンプル' },
       ],
       draw(canvas, p) {
+        // 学習目標: 最大マージン境界は「最も近い対向点（サポートベクター）」だけで決まることを見る。
+        // 操作: 2クラスの隔たり gap / 再サンプル。確認: gap を狭めると線形分離不可（ソフトマージン）へ転じる。
         const st = S(), Pl = P();
         const rand = st.rng(29 + (p.reseed | 0) * 43);
-        const gap = p.gap;
+        const gap = p.gap, sd = 0.55;
         const A = [], B = [];
-        for (let i = 0; i < 18; i++) { A.push([1.5 + 1.1 * st.randn(rand), 3 - gap / 2 + 1.1 * st.randn(rand)]); B.push([1.5 + 1.1 * st.randn(rand), 3 + gap / 2 + 1.1 * st.randn(rand)]); }
-        // 単純化: 境界は y = 3（2クラスの中間）水平線, マージン=最近点までの距離
-        const mid = 3;
-        let margin = Infinity, svA = null, svB = null;
-        A.forEach(pt => { const d = mid - pt[1]; if (d > 0 && d < margin) { margin = d; svA = pt; } });
-        B.forEach(pt => { const d = pt[1] - mid; if (d > 0 && d < margin) { /* keep smaller */ } });
-        // 実マージン = min distance over both classes
-        let m = Infinity;
-        A.forEach(pt => { m = Math.min(m, Math.abs(mid - pt[1])); });
-        B.forEach(pt => { m = Math.min(m, Math.abs(pt[1] - mid)); });
+        for (let i = 0; i < 16; i++) {
+          A.push([1.5 + 1.3 * st.randn(rand), 3 - gap / 2 + sd * st.randn(rand)]);
+          B.push([1.5 + 1.3 * st.randn(rand), 3 + gap / 2 + sd * st.randn(rand)]);
+        }
+        // クラスは y 方向にのみ平均が異なり分散は等方的 → 最大マージンの分離方向は水平。
+        // その場合の最適境界は「A の最上点」と「B の最下点」（＝サポートベクター）の中点。
+        let topA = -Infinity, svA = A[0];
+        A.forEach(pt => { if (pt[1] > topA) { topA = pt[1]; svA = pt; } });
+        let botB = Infinity, svB = B[0];
+        B.forEach(pt => { if (pt[1] < botB) { botB = pt[1]; svB = pt; } });
+        const separable = botB > topA;
+        const boundary = separable ? (topA + botB) / 2
+          : (st.mean(A.map(q => q[1])) + st.mean(B.map(q => q[1]))) / 2;
+        const m = separable ? (botB - topA) / 2 : 0;
         const pl = Pl.make(canvas, { xmin: -3, xmax: 6, ymin: -1, ymax: 7 });
         pl.clear(); pl.axes({ xLabel: 'x₁', yLabel: 'x₂' });
-        pl.ctx.save();
-        pl.ctx.fillStyle = 'rgba(152,162,179,0.12)';
-        pl.ctx.fillRect(pl.pad.left, pl.Y(mid + m), pl.W - pl.pad.left - pl.pad.right, pl.Y(mid - m) - pl.Y(mid + m));
-        pl.ctx.restore();
-        pl.hline(mid, { color: Pl.ink, width: 2.5, dash: [] });
-        pl.hline(mid + m, { color: Pl.gray, dash: [5, 4] });
-        pl.hline(mid - m, { color: Pl.gray, dash: [5, 4] });
-        A.forEach(pt => pl.scatter([pt], { color: Pl.colors[0], r: Math.abs(Math.abs(mid - pt[1]) - m) < 0.25 ? 6.5 : 3.5, alpha: 0.85 }));
-        B.forEach(pt => pl.scatter([pt], { color: Pl.colors[1], r: Math.abs(Math.abs(pt[1] - mid) - m) < 0.25 ? 6.5 : 3.5, alpha: 0.85 }));
+        if (m > 0) {
+          pl.ctx.save();
+          pl.ctx.fillStyle = 'rgba(152,162,179,0.14)';
+          pl.ctx.fillRect(pl.pad.left, pl.Y(boundary + m), pl.W - pl.pad.left - pl.pad.right, pl.Y(boundary - m) - pl.Y(boundary + m));
+          pl.ctx.restore();
+          pl.hline(boundary + m, { color: Pl.gray, dash: [5, 4] });
+          pl.hline(boundary - m, { color: Pl.gray, dash: [5, 4] });
+        }
+        pl.hline(boundary, { color: Pl.ink, width: 2.5, dash: [] });
+        A.forEach(pt => pl.scatter([pt], { color: Pl.colors[0], r: pt === svA ? 7 : 3.3, alpha: 0.85 }));
+        B.forEach(pt => pl.scatter([pt], { color: Pl.colors[1], r: pt === svB ? 7 : 3.3, alpha: 0.85 }));
+        // サポートベクターを丸で囲んで強調
+        [svA, svB].forEach(pt => { pl.ctx.strokeStyle = Pl.ink; pl.ctx.lineWidth = 1.5; pl.ctx.beginPath(); pl.ctx.arc(pl.X(pt[0]), pl.Y(pt[1]), 10, 0, Math.PI * 2); pl.ctx.stroke(); });
         pl.legend([{ label: 'クラス A', color: Pl.colors[0] }, { label: 'クラス B', color: Pl.colors[1] }]);
-        pl.text(-3, 7, 'マージン幅 = ' + (2 * m).toFixed(2) + '（大きい点＝サポートベクター）', { align: 'left', baseline: 'top', dx: 56, dy: 4, color: '#475467', size: 12.5 });
+        if (separable) {
+          pl.text(-3, 7, 'マージン幅 = ' + (2 * m).toFixed(2) + '　境界＝囲んだ2つのサポートベクターの中点（他点は無関係）', { align: 'left', baseline: 'top', dx: 56, dy: 4, color: '#475467', size: 11.5 });
+        } else {
+          pl.text(-3, 7, '線形分離できない → ソフトマージン（誤分類を許容）が必要', { align: 'left', baseline: 'top', dx: 56, dy: 4, color: '#e4572e', size: 12 });
+        }
       },
     },
   });
