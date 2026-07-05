@@ -51,7 +51,7 @@
 | prep1/mcmc | d | x | x | d | - | 3 | |
 | prep1/markov-chain | o | d | x | d | - | 2 | |
 | **prep1/logistic** | o | o | o | o | o | 0 | ✅Iter.9 |
-| prep1/log-linear | o | d | d | x | x | 3 | |
+| **prep1/log-linear** | o | o | o | o | o | 0 | ✅Iter.23 |
 | prep1/lln | o | d | x | d | - | 2 | |
 | **prep1/lda** | o | o | o | o | o | 0 | ✅Iter.7 |
 | prep1/kmeans | o | d | x | o | - | 1.5 | |
@@ -414,3 +414,22 @@
 - レンダリング: h3×3追加、KaTeXエラー0、内部リンク（distributions, clt, arima, discrete-distributions, mle）実在。verify-topics.js パス（85/85）。✅
 
 **次に深掘りすべきトピック**: `prep1/log-linear`（gap 3.0・L4欠落）、`prep1/fisher-cramer-rao`（gap 3.0）、`prep1/acf-pacf`（gap 3.0）。
+
+## 2026-07-05 — Iter.23
+
+**対象トピック**: `prep1/log-linear`（対数線形モデル・条件つき独立性）
+
+**選定理由**: gap 3.0。L4がまるごと欠落（デモなし）、L2は式のみで〈なぜ対数か〉未説明、L3が部分的・L5欠落。分割表群（contingency/odds-ratio）の締めで、ロジスティック回帰・GLMとも接続する要所。
+
+**埋めた層**
+- **L2（強化）**: なぜ対数か＝①セル度数はポアソン→GLMの対数リンク、②独立時 $m_{ij}=n p_i q_j$（積）が対数で $\mu+\lambda^A_i+\lambda^B_j$（和）に分解し交互作用が消える。$\lambda^{AB}\ne0$＝積で書けない＝独立からのズレ。2×2で $\log(\text{オッズ比})=4\lambda_{11}^{AB}$（交互作用=関連=対数オッズ比の一致）。
+- **L3（強化）**: 前提表——独立ポアソン計数（過分散→準ポアソン/負の二項）／期待度数大（疎な表→フィッシャー正確検定）／階層モデル（下位項を含む）／第3変数の交絡（シンプソン→3元表）。
+- **L5（新規）**: $G^2=2\sum O\log(O/E)$ は関連が同じなら $n$ に比例。$\psi{=}0.5$ は $n{=}100$ で非有意→$n{=}200$ で有意化、$\psi{=}1.0$ は6.1/12.1。独立棄却だけでなくオッズ比・$\lambda^{AB}$ の大きさで実質を読む。
+- **L4（新規デモ追加）**: 2×2対数線形モデルのバーチャート。操作=ψ（対数オッズ比）・n／確認=対角セルの期待度数が独立の一律n/4（灰）から離れる・ψ=0で一致・nで $G^2$ が比例増→独立棄却／対応数式=$G^2=2\sum O\log(O/E)$、セル確率 $a=\tfrac12\tfrac{\sqrt\theta}{1+\sqrt\theta}$。
+
+**検算結果（python3 独立実装）**
+- $\log(\text{オッズ比})=\psi$ の一致（$\psi{=}0.5,1.0,1.5$ でtarget一致）、独立$\psi{=}0$で全セル0.25、$\lambda^{AB}=\psi/4=0.25$。✅
+- 逸脱度 $G^2$: $\psi{=}0.5$ で $n{=}100{\to}1.55,\ n{=}200{\to}3.10$（<3.84 非有意）、$\psi{=}1.0$ で $6.06/12.12$（>3.84 有意）。デモ実装（$s=e^{\psi/2}$）と一致。✅
+- 境界確認: $\psi\in[-2,2],n\in[40,400]$ でセル確率>0・$G^2$ 有限・ゼロ除算なし。KaTeXエラー0、内部リンク（distributions, glm, odds-ratio, discrete-distributions, contingency）実在。verify-topics.js パス（85/85）。✅
+
+**次に深掘りすべきトピック**: `prep1/fisher-cramer-rao`（gap 3.0・推定論の効率下限）、`prep1/acf-pacf`（gap 3.0・時系列）、`prep1/crossval`（gap 3.0・計算統計）。

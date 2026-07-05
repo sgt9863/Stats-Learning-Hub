@@ -316,9 +316,60 @@
 <p>分割表の期待セル度数 $m_{ij}$ の<strong>対数</strong>を、分散分析のように要因の和で表すのが<strong>対数線形モデル</strong>です。</p>
 <p>$$ \\log m_{ij}=\\mu+\\lambda_i^{A}+\\lambda_j^{B}+\\lambda_{ij}^{AB} $$</p>
 <p>ここで<strong>交互作用項 $\\lambda_{ij}^{AB}$ が関連の強さ</strong>。これがゼロ（$\\lambda^{AB}=0$）のモデルは「$A$ と $B$ は独立」を意味し、当てはまりを $\\chi^2$ や尤度比で検定すれば、そのまま<strong>独立性の検定</strong>になります。</p>
+
+<h3>なぜ対数なのか・独立との関係</h3>
+<p>セル度数はカウントなので<a href="#/prep1/distributions">ポアソン分布</a>に従い、平均が正に制約されます。<a href="#/prep1/glm">一般化線形モデル</a>としてポアソンに合う自然なリンクが<strong>対数リンク</strong>——これが「対数」線形モデルの由来です。対数にはもう一つ決定的な利点があります。独立のとき期待度数は<strong>積</strong>の形 $m_{ij}=n\\,p_i\\,q_j$ になりますが、対数を取ると</p>
+<p>$$ \\log m_{ij}=\\underbrace{\\log n}_{\\mu}+\\underbrace{\\log p_i}_{\\lambda_i^{A}}+\\underbrace{\\log q_j}_{\\lambda_j^{B}} $$</p>
+<p>と<strong>和</strong>に分解でき、交互作用項が現れません。逆に言えば $\\lambda_{ij}^{AB}\\ne0$ は「期待度数が行効果×列効果の積で書けない＝独立からのズレ」そのものです。2×2表では、このズレはちょうど<strong><a href="#/prep1/odds-ratio">オッズ比</a>の対数</strong>に対応し、和ゼロ制約のもとで $\\log(\\text{オッズ比})=4\\lambda_{11}^{AB}$ が成り立ちます。交互作用＝関連＝対数オッズ比、が一本の線でつながります。</p>
+
 <h3>3元以上と条件つき独立</h3>
 <p>3変数 $A,B,C$ では、含める交互作用の組み合わせで階層的なモデル族ができます。例えば $A$–$B$ の関連が $C$ を与えると消える（$C$ を固定すると独立）なら<strong>条件つき独立</strong>。「見かけの関連」が第3変数で説明される（<a href="#/prep1/multiple-regression">交絡</a>と同じ構図）かを判定できます。変数間の条件つき独立関係を図示したものが<strong>グラフィカルモデル</strong>です。</p>
-<div class="note">対数線形モデルは、分割表を「回帰／分散分析の言葉」で扱えるようにする道具です。ロジスティック回帰とも数理的に結びつきます（応答を1変数に選べばロジスティック回帰に一致）。詳細は<a href="#/prep1/contingency">分割表とカイ二乗検定</a>・<a href="#/prep1/odds-ratio">オッズ比</a>と併せて学ぶと効果的です。</div>`,
+<h3>前提条件と、崩れたときの影響</h3>
+<table class="simple">
+<tr><th>前提</th><th>崩れると起きること</th><th>対処・代替</th></tr>
+<tr><td>各セルが独立なポアソン計数</td><td>クラスター・反復でセルが群れる（過分散）とSEを過小評価し、関連を過大に有意化</td><td>準ポアソン・<a href="#/prep1/discrete-distributions">負の二項</a>・混合効果</td></tr>
+<tr><td>期待度数が十分大きい</td><td>疎な表（期待度数が小さいセル）だと $\\chi^2$・$G^2$ の近似が崩れ、p値が信用できない</td><td>カテゴリを併合・正確検定（フィッシャー）・ベイズ</td></tr>
+<tr><td>階層モデル（下位項を含む）</td><td>交互作用だけ入れて主効果を落とすと解釈不能・当てはめが不安定</td><td>階層性を守る（$\\lambda^{AB}$ を入れるなら $\\lambda^A,\\lambda^B$ も入れる）</td></tr>
+<tr><td>関連が第3変数で交絡していない</td><td>2元表の見かけの関連が、実は第3変数 $C$ 経由（シンプソンのパラドックス）</td><td>3元表で条件つき独立を検定・層別</td></tr>
+</table>
+
+<h3>有意性と実質的な意味</h3>
+<p>交互作用の有意性は<strong>標本サイズに比例して膨らみます</strong>。逸脱度は $G^2=2\\sum O\\log(O/E)$ で、関連の強さ（$\\lambda^{AB}$）が同じなら $G^2$ はおよそ $n$ に比例します。たとえば対数オッズ比 $\\psi=0.5$（弱い関連）は $n=100$ だと $G^2\\approx1.6$ で有意になりませんが、$n=200$ で $\\approx3.1$、さらに増やせば必ず有意になります。逆に $\\psi=1.0$ なら $n=100$ で $G^2\\approx6.1$、$n=200$ で $\\approx12.1$ と、同じ関連でも $n$ 次第で結論が変わります。</p>
+<p>したがって「独立性が棄却された」だけでは中身は語れません。<strong>関連の大きさ＝オッズ比や $\\lambda^{AB}$ の値</strong>で実質を読むのが鉄則です。大標本ではごく弱い関連も必ず有意になり、逆に疎な表では強い関連でも検出できない——効果量と信頼区間をセットで報告します。</p>
+<div class="note">下は2×2表の対数線形モデル。関連の強さ（対数オッズ比 $\\psi$）を上げると、4セルの期待度数（色）が独立モデルの一様な期待（灰）から離れます。$\\psi=0$ ではすべて $n/4$ で一致＝独立。$n$ を増やすと同じ $\\psi$ でも $G^2$ が比例して大きくなり、独立が棄却されやすくなるのを確かめてください。ロジスティック回帰とも数理的に結びつきます（応答を1変数に選べば一致）。<a href="#/prep1/contingency">分割表とカイ二乗検定</a>・<a href="#/prep1/odds-ratio">オッズ比</a>と併せて学ぶと効果的です。</div>`,
+    demo: {
+      heading: '📊 2×2 対数線形モデル（独立からのズレ）',
+      note: 'ψ（対数オッズ比）を上げると対角セル（A1B1・A2B2）の期待度数が上がり、独立モデルの灰色バー（一律 n/4）から離れます。ψ=0 で完全一致＝独立。nを増やすと同じψでもG²が比例して増え、独立が棄却されやすくなります＝「有意性はnで決まる」。',
+      controls: [
+        { type: 'range', id: 'psi', label: '関連の強さ ψ（対数オッズ比）', min: -2, max: 2, step: 0.1, value: 1.0 },
+        { type: 'range', id: 'n', label: '総度数 n', min: 40, max: 400, step: 20, value: 200 },
+      ],
+      draw(canvas, p) {
+        const st = S(), Pl = P();
+        const psi = p.psi, n = Math.round(p.n);
+        const s = Math.exp(psi / 2);            // √θ
+        const a = 0.5 * s / (1 + s), b = 0.5 / (1 + s);  // 50/50 マージン
+        const pModel = [a, b, b, a];            // 11,12,21,22
+        const labels = ['A1·B1', 'A1·B2', 'A2·B1', 'A2·B2'];
+        const mObs = pModel.map(pp => n * pp);
+        const mInd = n * 0.25;
+        let G2 = 0;
+        for (let k = 0; k < 4; k++) G2 += 2 * mObs[k] * Math.log(mObs[k] / mInd);
+        const ymax = n * 0.45;
+        const pl = Pl.make(canvas, { xmin: 0.4, xmax: 4.6, ymin: 0, ymax });
+        pl.clear(); pl.axes({ xLabel: 'セル（A水準・B水準）', yLabel: '期待度数' });
+        for (let k = 0; k < 4; k++) {
+          const x = k + 1;
+          pl.bars([{ x0: x - 0.34, x1: x - 0.02, y: mInd }], { color: Pl.gray, alpha: 0.4 });
+          pl.bars([{ x0: x + 0.02, x1: x + 0.34, y: mObs[k] }], { color: Pl.colors[k % Pl.colors.length], alpha: 0.85 });
+          pl.text(x, 0, labels[k], { align: 'center', baseline: 'top', dy: 6, color: '#475467', size: 11.5 });
+        }
+        const sig = G2 > 3.841;
+        pl.text(0.4, ymax, 'G² = ' + G2.toFixed(2) + '（df=1, χ²5%=3.84） → ' + (sig ? '独立を棄却' : '独立と矛盾せず'),
+          { align: 'left', baseline: 'top', dx: 56, dy: 4, color: sig ? '#e4572e' : '#475467', size: 12.5 });
+        pl.legend([{ label: '独立モデルの期待 (n/4)', color: Pl.gray }, { label: '交互作用ありの期待', color: Pl.colors[0] }]);
+      },
+    },
   });
 
   /* --- 欠測データ --- */
