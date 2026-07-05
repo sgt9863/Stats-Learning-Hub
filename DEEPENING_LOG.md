@@ -92,7 +92,7 @@
 | doe/robust | o | x | o | d | - | 1.5 | |
 | doe/d-optimal | o | d | d | o | x | 2 | |
 | doe/ccd | o | x | x | o | x | 3 | |
-| chemo/pls-da | o | x | x | d | x | 3.5 | |
+| **chemo/pls-da** | o | o | o | o | o | 0 | ✅Iter.20 |
 | chemo/pls | o | d | x | d | x | 3 | |
 | chemo/opls-da | o | x | x | d | - | 2.5 | |
 | **prep1/regression** | o | o | o | o | o | 0 | ✅Iter.1で深掘り済 |
@@ -352,3 +352,23 @@
 - レンダリング: h3×2、KaTeXエラー0、内部リンク（multiple-regression, rsm, principles）実在。デモ境界（全効果0・ノイズ0／効果±8・ノイズ4）で例外なし。✅
 
 **次に深掘りすべきトピック**: `chemo/pls-da`（gap 3.5・ケモメトリクス）、`prep1/regularization`（gap 3.0）、`prep1/stochastic-process`（gap 3.0）。
+
+## 2026-07-05 — Iter.20
+
+**対象トピック**: `chemo/pls-da`（PLS-DA・判別のためのPLS）
+
+**選定理由**: マトリクス最大gap（3.5）。L1直感とデモ（L4）はあったが「PLS-DAが具体的に何を計算しているか」（L2）・破綻条件（L3）・「分離＝有意ではない」（L5）が皆無で、スコアプロットを眺めるだけで終わる状態だった。ユーザーの分析化学・品質管理の関心領域に直結。
+
+**埋めた層**
+- **L2（新規）**: PLS-DA＝ダミー $y\in\{+1,-1\}$ のPLS回帰であることを明示し、第1成分の重みが $\boldsymbol{w}_1\propto X^\top\boldsymbol{y}=\tfrac{n}{2}(\bar{\boldsymbol{x}}_A-\bar{\boldsymbol{x}}_B)$＝<strong>クラス平均差そのもの</strong>になる導出を追加。LDAとの対比（LDAは $S_W^{-1}$ で白色化するが $p>n$ で特異→PLS-DAは逆行列不要で高次元でも動く、がケモメトリクスでの採用理由）。
+- **L3（新規）**: 前提表——スケール（オートスケーリング）／$p\gg n$の過学習／クラス不均衡／交絡（→OPLS-DA）／線形分離の5前提。
+- **L5（新規）**: $R^2Y$ は常に1近く上がり証拠にならない。並べ替え検定＋交差検証 $Q^2$ で有意性を測る。でたらめラベルでも標本内100%・LOO-CV約0.5に崩壊、というギャップが過学習の実物。報告は $Q^2$・CV混同行列・並べ替え$p$値・効果量。
+- **L4（既存デモ活用）**: 分離度/交絡/ノイズのスライダはそのまま。本文L3の交絡→OPLS-DA、L5の「分離≠有意」と直結させた。
+
+**検算結果（python3 独立実装）**
+- 第1PLS重みとクラス平均差の一致: $\cos(\boldsymbol{w}_1,\bar{\boldsymbol{x}}_A-\bar{\boldsymbol{x}}_B)=1.000000$、$X^\top\boldsymbol{y}=(n/2)(\bar{\boldsymbol{x}}_A-\bar{\boldsymbol{x}}_B)$ を `np.allclose` で厳密確認。✅
+- 過学習: $n{=}20,p{=}200$・ランダムラベルで2成分PLS-DAの標本内正解率＝1.000（200通りのランダムラベル全てで1.000、min 1.000）。✅
+- CVで崩壊: 同データのLOO-CV正解率＝0.45（≈偶然0.5）。標本内100%とのギャップ＝過学習量。✅
+- レンダリング: h3×3追加（潜在成分/前提条件/有意性）、KaTeXエラー0、内部リンク（pls, lda, crossval, opls-da）実在。verify-topics.js パス（85/85）。✅
+
+**次に深掘りすべきトピック**: `prep1/regularization`（gap 3.0・回帰系の残り）、`prep1/stochastic-process`（gap 3.0）、`prep1/log-linear`（gap 3.0）。
