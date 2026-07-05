@@ -70,7 +70,7 @@
 | **prep1/crossval** | o | o | o | o | o | 0 | ✅Iter.26 |
 | prep1/correlation | o | d | d | o | - | 1 | |
 | prep1/continuous-distributions | o | x | d | o | - | 1.5 | |
-| prep1/contingency | d | d | d | d | x | 3 | |
+| **prep1/contingency** | o | o | o | o | o | 0 | ✅Iter.30 |
 | **prep1/confidence** | o | o | o | o | o | 0 | ✅Iter.3で深掘り済 |
 | prep1/conditional-bayes | o | d | x | o | - | 1.5 | |
 | prep1/clustering | o | x | x | d | - | 2.5 | |
@@ -552,3 +552,26 @@
 - 検証: node --check・verify-topics.js パス（85/85）。内部リンク（multiple-regression, d-optimal）実在。✅
 
 **次に深掘りすべきトピック**: `prep1/contingency`（gap 3.0・L1から薄い）、`math/linearization`（gap 3.5・数学基礎）、`math/gradient`（gap 3.0）。
+
+## 2026-07-05 — Iter.30
+
+**対象トピック**: `prep1/contingency`（分割表とカイ二乗独立性検定）
+
+**選定理由**: gap 3.0・検定系。各層が部分的（`ddddx`）で、期待度数と自由度の「なぜ」・前提・効果量が欠けていた。2級/準1級頻出。
+
+**埋めた層**
+- **L2（強化）**: $E_{ij}=$行×列/N の導出（独立＝同時確率が周辺の積 $P(i,j)=P(i)P(j)$ を推定して$N$倍）。$(O-E)/\sqrt E$ の二乗和が近似χ²になる理由。自由度 $(r-1)(c-1)=rc-1-(r-1)-(c-1)$ の内訳。
+- **L3（新規）**: 前提表——期待度数≥5（疎→フィッシャー/併合）／観測の独立（対応→マクネマー・CMH）／2×2連続修正（イェーツ）／交絡（シンプソン→層別・対数線形）。
+- **L5（新規）**: χ²はNに比例（度数3倍でχ²3倍・有意化）＝有意≠強い。効果量 $\phi=\sqrt{\chi^2/N}$（$\chi^2=N\phi^2$）・オッズ比・クラメール $V=\sqrt{\chi^2/(N\min(r-1,c-1))}$。度数3倍でもV不変。
+- **L1/L4（温存）**: 既存の直感とデモ（観測vs期待の棒）は妥当なので保持。
+
+**検算結果（python3 独立実装）**
+- $E_{ij}=$行×列/N、χ²=9.333、df=(2-1)(3-1)=2。✅
+- クラメールV=√(χ²/(N·1))=0.258。度数3倍→χ²=28.0(=9.33×3)だがV=0.258不変。✅
+- 2×2: χ²=16.667=N·φ²（φ=0.408, N=100）、オッズ比6.0。✅
+- 小度数2×2（最小期待2.62<5）フィッシャー両側p=0.035＝χ²近似不可の実例。✅
+- 検証: node --check・verify-topics.js パス（85/85）。内部リンク（log-linear）実在。✅
+
+**次に深掘りすべきトピック**: `math/linearization`（gap 3.5・数学基礎で最大gap）、`math/gradient`（gap 3.0）、`prep1/odds-ratio`（gap 2.5・contingencyと対）。
+
+（注: Iter.27 MCMC は並行セッションが処理済み。マトリクスで完了を確認してから選ぶこと）
