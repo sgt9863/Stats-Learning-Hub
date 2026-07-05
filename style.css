@@ -78,14 +78,6 @@ a { color: var(--accent); }
 
 .brand:hover { opacity: 0.82; }
 
-.tagline {
-  color: #9a9ea8;
-  font-size: 12.5px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 /* ---------- レイアウト ---------- */
 .layout {
   display: grid;
@@ -194,15 +186,6 @@ a { color: var(--accent); }
   margin: 0 0 10px;
   line-height: 1.3;
   color: #fff;
-}
-
-.hero .en {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  margin-left: 10px;
-  color: #8f8affe0;
 }
 
 .hero p { font-size: 15.5px; max-width: 46em; color: #c9cbd4; }
@@ -717,7 +700,6 @@ table.simple th {
 /* ---------- モバイル ---------- */
 @media (max-width: 900px) {
   .layout { grid-template-columns: 1fr; }
-  .tagline { display: none; }
 
   #sidebar {
     position: static;

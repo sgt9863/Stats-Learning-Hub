@@ -775,7 +775,7 @@ function homeHtml() {
   const total = window.STATS_TOPICS.length;
   return '<div class="home">' +
     '<section class="hero">' +
-    '<h1>統計学習ハブ <span class="en">Stats Learning Hub</span></h1>' +
+    '<h1>Stats Learning Hub</h1>' +
     '<p>統計検定<strong>2級</strong>の知識を土台に、<strong>数学の基礎（高校数学・数III）</strong>から<strong>準1級の統計理論・実験計画法・ケモメトリクス</strong>までを、図とグラフで直感的に学ぶ教材です。全 ' + total + ' トピック。多くは触って動かせるグラフ、要所は 3D で回して確かめられます。</p>' +
     '<ul class="hero-points">' +
     '<li>📐 数IIIの知識で追える線形代数から出発</li>' +
