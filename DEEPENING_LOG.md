@@ -80,7 +80,7 @@
 | **prep1/bayes** | o | o | o | o | o | 0 | ✅Iter.11 |
 | prep1/arima | o | x | d | o | x | 2.5 | |
 | **prep1/anova1** | o | o | o | o | o | 0 | ✅Iter.4で深掘り済 |
-| prep1/acf-pacf | o | d | x | d | x | 3 | |
+| **prep1/acf-pacf** | o | o | o | o | o | 0 | ✅Iter.25 |
 | math/vectors-matrices | d | d | x | o | - | 2 | |
 | math/matrix-ops | o | d | x | o | x | 2.5 | |
 | math/linearization | d | d | x | d | x | 3.5 | |
@@ -453,3 +453,24 @@
 - レンダリング: h3×3追加、KaTeXエラー0、内部リンク（confidence）実在。verify-topics.js パス（85/85）。✅
 
 **次に深掘りすべきトピック**: `prep1/acf-pacf`（gap 3.0・時系列の同定）、`prep1/crossval`（gap 3.0・計算統計）、`prep1/mcmc`（gap 3.0・L1から欠落）。
+
+## 2026-07-05 — Iter.25
+
+**対象トピック**: `prep1/acf-pacf`（自己相関・偏自己相関／コレログラム）
+
+**選定理由**: gap 3.0・時系列モデル同定の中核。L2はACF式のみでPACFの定義・なぜ切れる/減衰するかが未説明、L3前提とL5欠落、L4デモはACFのみでPACFを描いていなかった（本文の表と不整合）。ARIMAの前提トピック。
+
+**埋めた層**
+- **L2（強化）**: PACF $\phi_{kk}$ の定義（$y_t$ を $k$ ラグまで回帰した最古ラグの係数）→ AR($p$) はラグ $p$ で切れる理由、ユール・ウォーカー/レビンソン・ダービン。AR(1) の $\rho_k=\phi\rho_{k-1}\Rightarrow\rho_k=\phi^k$ の漸化式導出。MA($q$) は裏返し（ACF切断・PACF減衰）。
+- **L3（新規）**: 前提表——定常性（非定常だとACFが減衰せず次数不読→階差/ADF）／季節性（周期スパイク→SARIMA）／系列長（短いと帯超えの偽スパイク増）／外れ値・構造変化。
+- **L5（新規）**: 青帯 $\pm1.96/\sqrt n$ はホワイトノイズ帰無の95%目安。多重比較（20ラグなら偶然約1本が帯超え）。リュング・ボックス検定・AIC併用。
+- **L4（デモ強化）**: 「表示」セレクトで ACF/PACF 切替を追加。PACF はレビンソン・ダービン漸化式でACFから算出。AR(1) で PACF がラグ1のみ立ち以降0＝本文の表を実証。理論オーバーレイも ACF=$\phi^k$／PACF=（ラグ1のみφ）で切替。
+
+**検算結果（python3 + node独立実装）**
+- AR(1) φ=0.7: 標本ACF [0.711,0.51,0.368]≈理論$\phi^k$[0.7,0.49,0.343]、PACF [0.711,0.008,0.004,…]＝ラグ1で切断。✅
+- AR(2) φ=(0.5,0.3): PACF [0.727,0.307,0.022,…]＝ラグ2で切断。✅
+- デモのDurbin-Levinson（JS）を理論AR(1) ACFで単体検証: PACF=[1,0.70,0,0,…]。✅
+- 帯 $\pm1.96/\sqrt{240}=0.127$、ホワイトノイズで4.3%のラグが帯超え（≈5%）。✅
+- 検証: node --check・verify-topics.js パス（85/85）。ブラウザでACF/PACF両状態を描画確認（JSエラー0、PACFがラグ1で切れる図を確認）。内部リンク（arima）実在。✅
+
+**次に深掘りすべきトピック**: `prep1/crossval`（gap 3.0・計算統計）、`prep1/mcmc`（gap 3.0・L1から欠落）、`chemo/pls`（gap 3.0・L5欠落・分析化学）。

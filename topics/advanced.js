@@ -385,10 +385,30 @@
 <tr><td>AR(p)</td><td>徐々に減衰</td><td>ラグ $p$ で切れる</td></tr>
 <tr><td>MA(q)</td><td>ラグ $q$ で切れる</td><td>徐々に減衰</td></tr>
 </table>
-<div class="note">下は AR(1)：$y_t=\\phi\\,y_{t-1}+\\varepsilon_t$。係数 $\\phi$ を動かすと、ACF が $\\phi^k$ で幾何的に減衰します（$\\phi$ が1に近いほどゆっくり）。$\\phi<0$ では符号が交互に振れます。青帯は「相関ゼロ」とみなせる目安の範囲です。</div>`,
+
+<h3>なぜ切れる・なぜ減衰するのか</h3>
+<p>PACF の $k$ 番目 $\\phi_{kk}$ は、$y_t$ を $y_{t-1},\\dots,y_{t-k}$ に回帰したときの<strong>一番古いラグの係数</strong>と定義されます。AR($p$) は定義そのものが「$p$ ラグまでの回帰」なので、$k\\le p$ では係数が残り、$k>p$ では<strong>余分なラグの係数がちょうど0</strong>——だから PACF はラグ $p$ で切れます。これはユール・ウォーカー方程式（ACF が満たす連立方程式）を解いて $\\phi_{kk}$ を取り出すのと同じで、実装はレビンソン・ダービンの漸化式で ACF から直接 PACF を出せます。</p>
+<p>一方 ACF は減衰します。AR(1) $y_t=\\phi y_{t-1}+\\varepsilon_t$ で $\\rho_k=\\mathrm{Corr}(y_t,y_{t-k})$ を作ると、漸化式 $\\rho_k=\\phi\\,\\rho_{k-1}$（$\\rho_0=1$）が立ち、解いて $\\rho_k=\\phi^k$。$k$ 時点前の影響が「$y_{t-1}$ 経由の間接経路」で伝わり続けるので、幾何級数的に細く尾を引きます。MA($q$) はちょうど裏返しで、$q$ 時点より前の誤差は式に入らない＝<strong>ACF がラグ $q$ で切れ</strong>、PACF が減衰します。ACF と PACF の「切れる／減衰する」が入れ替わるのが AR と MA の同定の決め手です。</p>
+
+<h3>前提条件と、崩れたときの影響</h3>
+<table class="simple">
+<tr><th>前提</th><th>崩れると起きること</th><th>対処・代替</th></tr>
+<tr><td>系列が定常</td><td>トレンド・単位根があると ACF が<strong>ほとんど減衰せず</strong>ゆっくり1から下がるだけで、次数が読めない</td><td>階差をとって定常化（<a href="#/prep1/arima">ARIMA</a>）・ADF検定</td></tr>
+<tr><td>季節性がない（または除去済み）</td><td>周期 $s$ ごとに ACF が突出し、単純な AR/MA と誤読する</td><td>季節階差・SARIMA・周期成分の除去</td></tr>
+<tr><td>系列長 $n$ が十分</td><td>短い系列では標本 ACF の分散が大きく、帯を超える見かけのスパイクが増える</td><td>データを増やす・帯（$\\pm1.96/\\sqrt n$）を併記して慎重に読む</td></tr>
+<tr><td>外れ値・構造変化がない</td><td>水準シフトや異常値が相関構造を歪める</td><td>外れ値処理・区間分割・介入分析</td></tr>
+</table>
+
+<h3>有意性と実質的な意味</h3>
+<p>コレログラムの青帯 $\\pm1.96/\\sqrt n$ は「系列がホワイトノイズ（無相関）なら標本 ACF はこの範囲に約95%収まる」という<strong>有意性の目安</strong>です。帯を超えるスパイク＝ラグ $k$ に統計的に意味のある自己相関、と読みます。ただし<strong>多重比較</strong>に注意——ホワイトノイズでも各ラグは5%の確率で帯を超えるので、ラグを20本見れば平均1本は偶然はみ出します（数値実験でも約4〜5%が越えました）。1本の突出に飛びつかず、全体のパターン（減衰か切断か）で判断します。系列全体が無相関かは、複数ラグをまとめて検定する<strong>リュング・ボックス検定</strong>で確かめ、次数の最終決定は AIC などの情報量規準と併用するのが実務です。</p>
+<div class="note">下は AR(1)：$y_t=\\phi\\,y_{t-1}+\\varepsilon_t$。「表示」で ACF と PACF を切り替えられます。<strong>ACF</strong> は $\\phi^k$ で幾何的に減衰（$\\phi$ が1に近いほどゆっくり、$\\phi<0$ で符号が交互）。<strong>PACF</strong> はラグ1だけ突出してあとは0近く＝「AR(1) は PACF がラグ1で切れる」の実物です。青帯 $\\pm1.96/\\sqrt n$ は相関ゼロとみなせる目安の範囲です。</div>`,
     demo: {
-      note: 'AR(1)のACFは φ^k で減衰。φを1に近づけると系列が滑らかになりACFがゆっくり減る＝強い持続性。φを負にすると値がジグザグしACFも交互に符号を変えます。',
+      note: 'AR(1)のACFは φ^k で減衰。PACFに切り替えるとラグ1だけ立ってあとは0近く＝AR(1)はPACFがラグ1で切れる。φを1に近づけると系列が滑らかになりACFがゆっくり減る＝強い持続性。φを負にすると値も自己相関も交互に符号を変えます。',
       controls: [
+        { type: 'select', id: 'stat', label: '表示', value: 'acf', options: [
+          { value: 'acf', label: '自己相関 ACF' },
+          { value: 'pacf', label: '偏自己相関 PACF' },
+        ]},
         { type: 'range', id: 'phi', label: 'AR係数 φ', min: -0.9, max: 0.95, step: 0.05, value: 0.7 },
         { type: 'button', id: 'reseed', label: '再生成' },
       ],
@@ -406,8 +426,23 @@
           let c = 0; for (let t = k; t < n; t++) c += (y[t] - my) * (y[t - k] - my);
           acf.push(c / n / c0);
         }
+        // PACF（レビンソン・ダービンの漸化式で ACF から算出）
+        const pacf = [1];
+        let ph = [];
+        for (let k = 1; k <= K; k++) {
+          if (k === 1) { ph = [acf[1]]; pacf.push(acf[1]); continue; }
+          let num = acf[k], den = 1;
+          for (let j = 1; j < k; j++) { num -= ph[j - 1] * acf[k - j]; den -= ph[j - 1] * acf[j]; }
+          const kk = num / (den || 1e-9);
+          const nph = [];
+          for (let j = 1; j < k; j++) nph.push(ph[j - 1] - kk * ph[k - 1 - j]);
+          nph.push(kk);
+          ph = nph; pacf.push(kk);
+        }
+        const isP = p.stat === 'pacf';
+        const data = isP ? pacf : acf;
         const pl = Pl.make(canvas, { xmin: -0.5, xmax: K + 0.5, ymin: -1, ymax: 1 });
-        pl.clear(); pl.axes({ xLabel: 'ラグ k', yLabel: '自己相関 ρ_k' });
+        pl.clear(); pl.axes({ xLabel: 'ラグ k', yLabel: isP ? '偏自己相関 φ_kk' : '自己相関 ρ_k' });
         // 有意帯 ±1.96/√n
         const bound = 1.96 / Math.sqrt(n);
         pl.ctx.save();
@@ -416,10 +451,11 @@
         pl.ctx.fillRect(pl.pad.left, yb1, pl.W - pl.pad.left - pl.pad.right, yb2 - yb1);
         pl.ctx.restore();
         pl.hline(0, { color: Pl.gray, dash: [] });
-        acf.forEach((r, k) => { pl.ctx.strokeStyle = Pl.colors[0]; pl.ctx.lineWidth = 3; pl.ctx.beginPath(); pl.ctx.moveTo(pl.X(k), pl.Y(0)); pl.ctx.lineTo(pl.X(k), pl.Y(r)); pl.ctx.stroke(); pl.scatter([[k, r]], { color: Pl.colors[0], r: 3 }); });
-        // 理論値 φ^k
-        pl.line(acf.map((r, k) => [k, Math.pow(phi, k)]), { color: Pl.colors[1], width: 1.5, dash: [4, 3] });
-        pl.legend([{ label: '標本ACF', color: Pl.colors[0] }, { label: '理論 φ^k', color: Pl.colors[1] }]);
+        data.forEach((r, k) => { pl.ctx.strokeStyle = Pl.colors[0]; pl.ctx.lineWidth = 3; pl.ctx.beginPath(); pl.ctx.moveTo(pl.X(k), pl.Y(0)); pl.ctx.lineTo(pl.X(k), pl.Y(r)); pl.ctx.stroke(); pl.scatter([[k, r]], { color: Pl.colors[0], r: 3 }); });
+        // 理論値: ACF は φ^k、PACF は lag1=φ, それ以外0
+        const theory = isP ? data.map((r, k) => [k, k === 1 ? phi : 0]) : data.map((r, k) => [k, Math.pow(phi, k)]);
+        pl.line(theory, { color: Pl.colors[1], width: 1.5, dash: [4, 3] });
+        pl.legend([{ label: isP ? '標本PACF' : '標本ACF', color: Pl.colors[0] }, { label: isP ? '理論（AR(1)）' : '理論 φ^k', color: Pl.colors[1] }]);
       },
     },
   });
