@@ -1,20 +1,29 @@
 :root {
   --bg: #f6f6f7;
   --panel: #ffffff;
+  --surface: #eef0f3;
   --ink: #101014;
   --ink-2: #1c1c22;
   --ink-3: #2a2a33;
   --muted: #6b7080;
-  --accent: #4f46e5;
-  --accent-deep: #3730a3;
-  --accent-soft: #eef0ff;
+  --muted-2: #8a8e9c;
+  --nav-ink: #43485a;
+  /* 単一アクセント＝低彩度スレート墨。グラフ系列色（青#4f6df5 ほか）と競合しない。
+     旧 #4f46e5 はグラフの青とほぼ同一だったため置換。詳細は DESIGN_SYSTEM.md */
+  --accent: #3b4557;
+  --accent-deep: #2a3242;
+  --accent-soft: #eef0f3;
   --accent2: #e4572e;
   --line: #e5e6eb;
   --line-strong: #d5d6dd;
+  --hover: #ececef;
   --ok: #0f766e;
   --ok-soft: #e8f5f2;
   --ng: #c2410c;
   --ng-soft: #fdf0e8;
+  --warn-bg: #fffbeb;
+  --warn-line: #eadfb8;
+  --warn-bar: #d4a017;
   --radius: 12px;
   --font: "Inter", "Noto Sans JP", "Hiragino Sans", "Yu Gothic UI", system-ui, -apple-system, sans-serif;
 }
@@ -36,7 +45,7 @@ body {
 
 a { color: var(--accent); }
 
-::selection { background: rgba(79, 70, 229, 0.16); }
+::selection { background: rgba(59, 69, 87, 0.16); }
 
 :focus-visible {
   outline: 2px solid var(--accent);
@@ -106,14 +115,14 @@ a { color: var(--accent); }
 #sidebar a {
   display: block;
   text-decoration: none;
-  color: #43485a;
+  color: var(--nav-ink);
   padding: 5px 11px;
   border-radius: 7px;
   margin: 1px 0;
   transition: background 0.12s ease, color 0.12s ease;
 }
 
-#sidebar a:hover { background: #ececef; color: var(--ink); }
+#sidebar a:hover { background: var(--hover); color: var(--ink); }
 
 #sidebar a.active {
   background: var(--accent);
@@ -146,7 +155,7 @@ a { color: var(--accent); }
 }
 #sidebar details[open] summary::before { transform: rotate(90deg); }
 
-#sidebar summary:hover { background: #ececef; }
+#sidebar summary:hover { background: var(--hover); }
 
 #sidebar .count {
   color: var(--muted);
@@ -160,7 +169,7 @@ a { color: var(--accent); }
 #sidebar .nav-group {
   font-size: 10.5px;
   font-weight: 700;
-  color: #8a8e9c;
+  color: var(--muted-2);
   letter-spacing: 0.08em;
   margin: 11px 0 3px 13px;
   padding-top: 8px;
@@ -390,8 +399,8 @@ a { color: var(--accent); }
 }
 
 .note {
-  background: var(--accent-soft);
-  border: 1px solid #dfe2fb;
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-left: 4px solid var(--accent);
   padding: 13px 18px;
   border-radius: 0 8px 8px 0;
@@ -573,8 +582,8 @@ table.simple th {
 
 /* ---------- 例題 ---------- */
 .example {
-  background: #fffbeb;
-  border: 1px solid #eadfb8;
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-line);
   border-radius: var(--radius);
   padding: 20px 24px 22px;
   margin-top: 2.4em;
@@ -583,15 +592,15 @@ table.simple th {
 .example-body ol, .example-body ul { padding-left: 1.4em; }
 .example-body .katex-display { overflow-x: auto; overflow-y: hidden; }
 .example-body .step {
-  border-left: 3px solid #d4a017;
+  border-left: 3px solid var(--warn-bar);
   padding: 3px 0 3px 14px;
   margin: 1em 0;
 }
 
 /* ---------- まとめ（キーポイント） ---------- */
 .keypoints {
-  background: var(--accent-soft);
-  border: 1px solid #dfe2fb;
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 18px 26px 20px;
   margin-top: 2.4em;
@@ -664,8 +673,8 @@ table.simple th {
 .quiz-explain {
   margin-top: 13px;
   padding: 13px 17px;
-  background: var(--accent-soft);
-  border: 1px solid #dfe2fb;
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-radius: 9px;
   font-size: 13.5px;
   line-height: 1.8;
