@@ -662,12 +662,14 @@ const SECTIONS = [
 /* 各セクション内の小分類（表示順）。topic.group がこの順で見出し表示される。 */
 const SUBSECTIONS = {
   math: ['線形代数', '微分と最適化'],
-  prep1: ['確率と分布', '推定', '検定', 'ベイズ', '回帰分析', '多変量解析', '分散分析と実験計画（範囲内）', '時系列'],
+  prep1: ['確率と確率変数', '確率と分布', '種々の確率分布', '推定', '検定', 'マルコフ連鎖と確率過程', '回帰分析', '分散分析と実験計画（範囲内）', '標本調査法', '多変量解析', '時系列', '分割表', 'ベイズ', '計算統計・シミュレーション'],
   doe: [],
   chemo: [],
 };
 
 window.STATS_TOPICS = window.STATS_TOPICS || [];
+// トピックid（"section/id"）→ { example, keypoints, quiz } の学習コンテンツ
+window.STATS_QUIZ = window.STATS_QUIZ || {};
 
 /* ---------- 状態管理 ---------- */
 const state = { route: { page: 'home' } };
@@ -707,6 +709,7 @@ function render() {
     const t = findTopic(state.route.section, state.route.topic);
     main.innerHTML = topicHtml(t);
     buildDemo(t); // デモ入力部品の生成（render の一部として、トピック表示時に一度だけ）
+    buildQuiz();  // 確認問題のクリック処理を配線
   }
   if (window.renderMathInElement) {
     window.renderMathInElement(main, {
@@ -780,6 +783,7 @@ function homeHtml() {
     '<li>🌐 3D応答曲面・PLSスコアなど Plotly で可視化</li>' +
     '</ul></section>' +
     '<section class="cards">' + cards + '</section>' +
+    roadmapHtml() +
     '<section class="howto"><h2>📖 学び方のヒント</h2><ol>' +
     '<li><strong>数学の基礎</strong>で行列・固有値・勾配を先につかむと、後の回帰・主成分分析・PLS がぐっと楽になります。</li>' +
     '<li>準1級対策なら「数学の基礎 → 準1級 統計理論」を中心に。品質管理・分析化学の応用なら「実験計画法（応用）」「ケモメトリクス」へ。</li>' +
@@ -787,6 +791,35 @@ function homeHtml() {
     '</ol>' +
     '<p class="howto-note">セクションの分け方：<strong>準1級</strong>は統計検定準1級の出題範囲。<strong>実験計画法（応用）</strong>と<strong>ケモメトリクス</strong>は、範囲が重なる項目は準1級側に置き、ここには準1級範囲外の発展内容だけを収めています。</p>' +
     '</section></div>';
+}
+
+function roadmapHtml() {
+  // 各セクションのグループを「学習順路」として並べる。各ステップは最初のトピックへリンク。
+  const stepFor = (sec, group, topics) => {
+    const first = topics[0];
+    const href = first ? '#/' + sec + '/' + first.id : '#/';
+    return '<a class="rm-step" href="' + href + '">' +
+      '<span class="rm-label">' + group + '</span>' +
+      '<span class="rm-count">' + topics.length + '</span></a>';
+  };
+  let steps = '';
+  // 数学の基礎
+  for (const g of groupsOf('math')) steps += stepFor('math', g.label || '数学', g.topics);
+  // 準1級の各グループ（範囲表の大項目順）
+  for (const g of groupsOf('prep1')) steps += stepFor('prep1', g.label || '準1級', g.topics);
+  let ext = '';
+  for (const s of ['doe', 'chemo']) {
+    const list = topicsBySection(s);
+    if (!list.length) continue;
+    const sec = SECTIONS.find(x => x.id === s);
+    ext += stepFor(s, sec.icon + ' ' + sec.title, list);
+  }
+  return '<section class="roadmap"><h2>🧭 学習ロードマップ</h2>' +
+    '<p class="rm-intro">上から順に進むのがおすすめです。まず<strong>数学の基礎</strong>で道具をそろえ、<strong>準1級</strong>を確率→分布→推定→検定→モデルの順に。数字は各テーマのトピック数です。</p>' +
+    '<div class="rm-track">' + steps + '</div>' +
+    '<p class="rm-ext-label">＋α（準1級範囲外の応用）</p>' +
+    '<div class="rm-track">' + ext + '</div>' +
+    '</section>';
 }
 
 function topicHtml(t) {
@@ -812,11 +845,74 @@ function topicHtml(t) {
       (t.demo.note ? '<p class="demo-note">' + t.demo.note + '</p>' : '') +
       '</section>';
   }
+  const content = (window.STATS_QUIZ || {})[t.section + '/' + t.id];
+  if (content) {
+    if (content.example) html += exampleHtml(content.example);
+    if (content.keypoints && content.keypoints.length) html += keypointsHtml(content.keypoints);
+    if (content.quiz && content.quiz.length) html += quizHtml(content.quiz);
+  }
   html += '<nav class="pager">' +
     (prev ? '<a class="pg prev" href="#/' + prev.section + '/' + prev.id + '">← ' + prev.title + '</a>' : '<span></span>') +
     (next ? '<a class="pg next" href="#/' + next.section + '/' + next.id + '">' + next.title + ' →</a>' : '<span></span>') +
     '</nav></article>';
   return html;
+}
+
+/* ---------- 学習コンテンツ（例題・まとめ・確認問題）の描画 ---------- */
+function exampleHtml(ex) {
+  // ex: { title?, body(HTML) }  ステップつきの計算例
+  return '<section class="example"><h2>✍️ 例題' + (ex.title ? '：' + ex.title : '') + '</h2>' +
+    '<div class="example-body">' + ex.body + '</div></section>';
+}
+
+function keypointsHtml(points) {
+  return '<section class="keypoints"><h2>📌 この項目のまとめ</h2><ul>' +
+    points.map(p => '<li>' + p + '</li>').join('') + '</ul></section>';
+}
+
+function quizHtml(quiz) {
+  let h = '<section class="quiz"><h2>✅ 確認問題</h2>' +
+    '<p class="quiz-intro">選択肢を押すと正誤と解説が表示されます。まず自分で考えてから選びましょう。</p>' +
+    '<div id="quiz-root">';
+  quiz.forEach((item, qi) => {
+    h += '<div class="quiz-q" data-answer="' + item.answer + '">' +
+      '<p class="quiz-prompt"><span class="quiz-num">Q' + (qi + 1) + '</span> ' + item.q + '</p>' +
+      '<div class="quiz-choices">';
+    item.choices.forEach((c, ci) => {
+      h += '<button type="button" class="quiz-choice" data-ci="' + ci + '">' +
+        '<span class="quiz-mark"></span><span class="quiz-choice-text">' + c + '</span></button>';
+    });
+    h += '</div>' +
+      '<div class="quiz-explain" hidden><strong>解説：</strong>' + item.explain + '</div>' +
+      '</div>';
+  });
+  h += '</div></section>';
+  return h;
+}
+
+function buildQuiz() {
+  const root = document.getElementById('quiz-root');
+  if (!root) return;
+  root.querySelectorAll('.quiz-q').forEach(qEl => {
+    const answer = parseInt(qEl.getAttribute('data-answer'), 10);
+    const choices = qEl.querySelectorAll('.quiz-choice');
+    const explain = qEl.querySelector('.quiz-explain');
+    choices.forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (qEl.classList.contains('answered')) return;
+        qEl.classList.add('answered');
+        const ci = parseInt(btn.getAttribute('data-ci'), 10);
+        choices.forEach(b => {
+          const bi = parseInt(b.getAttribute('data-ci'), 10);
+          b.disabled = true;
+          if (bi === answer) b.classList.add('correct');
+          else if (bi === ci) b.classList.add('wrong');
+        });
+        btn.querySelector('.quiz-mark').textContent = (ci === answer) ? '○ ' : '× ';
+        explain.hidden = false;
+      });
+    });
+  });
 }
 
 /* ---------- デモ制御 ----------

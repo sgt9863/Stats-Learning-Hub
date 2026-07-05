@@ -1,0 +1,532 @@
+'use strict';
+/* 発展2: 判別(SVM/ROC)・多変量その他・分割表・欠測・計算統計・標本調査・ブロック計画 */
+(function () {
+  const T = (window.STATS_TOPICS = window.STATS_TOPICS || []);
+  const S = () => window.Stats;
+  const P = () => window.Plot;
+
+  /* --- サポートベクターマシン --- */
+  T.push({
+    section: 'prep1', group: '多変量解析', id: 'svm', title: 'サポートベクターマシン（マージン最大化）',
+    summary: '2クラスを分ける境界のうち「一番余裕（マージン）が大きい」ものを選ぶSVMの発想と、サポートベクターの役割を見ます。',
+    body: `
+<p>2クラスを直線（超平面）で分けるとき、境界の引き方は無数にあります。<strong>SVM</strong>は、両クラスから最も離れた——<strong>マージン（余白）が最大</strong>の境界を選びます。</p>
+<p>$$ \\max_{\\boldsymbol w,b}\\ \\frac{2}{\\|\\boldsymbol w\\|}\\quad \\text{s.t.}\\ y_i(\\boldsymbol w^\\top\\boldsymbol x_i+b)\\ge 1 $$</p>
+<p>マージンの縁に接する少数の点を<strong>サポートベクター</strong>と呼び、境界はこれらだけで決まります（他の点は動かしても境界は不変）。線形分離できないときは<strong>ソフトマージン</strong>（誤分類を許すスラック）や<strong>カーネル法</strong>（高次元へ写して非線形分離）を使います。<a href="#/prep1/lda">判別分析</a>が分布の仮定に基づくのに対し、SVMは境界そのものを最適化する点が対照的です。</p>
+<div class="note">下で2クラスの離れ具合を動かすと、最大マージン境界（実線）とマージン帯（点線）、縁に乗るサポートベクター（大きい点）が変わります。マージンの内側・縁の点だけが境界を支えていることに注目してください。</div>`,
+    demo: {
+      note: 'クラスを近づけるとマージンが狭まり、縁のサポートベクターが増える。境界を支えるのは縁の少数点だけで、遠くの点をいくら動かしても境界は動きません。',
+      controls: [
+        { type: 'range', id: 'gap', label: '2クラスの隔たり', min: 0.5, max: 5, step: 0.2, value: 2.6 },
+        { type: 'button', id: 'reseed', label: '再サンプル' },
+      ],
+      draw(canvas, p) {
+        const st = S(), Pl = P();
+        const rand = st.rng(29 + (p.reseed | 0) * 43);
+        const gap = p.gap;
+        const A = [], B = [];
+        for (let i = 0; i < 18; i++) { A.push([1.5 + 1.1 * st.randn(rand), 3 - gap / 2 + 1.1 * st.randn(rand)]); B.push([1.5 + 1.1 * st.randn(rand), 3 + gap / 2 + 1.1 * st.randn(rand)]); }
+        // 単純化: 境界は y = 3（2クラスの中間）水平線, マージン=最近点までの距離
+        const mid = 3;
+        let margin = Infinity, svA = null, svB = null;
+        A.forEach(pt => { const d = mid - pt[1]; if (d > 0 && d < margin) { margin = d; svA = pt; } });
+        B.forEach(pt => { const d = pt[1] - mid; if (d > 0 && d < margin) { /* keep smaller */ } });
+        // 実マージン = min distance over both classes
+        let m = Infinity;
+        A.forEach(pt => { m = Math.min(m, Math.abs(mid - pt[1])); });
+        B.forEach(pt => { m = Math.min(m, Math.abs(pt[1] - mid)); });
+        const pl = Pl.make(canvas, { xmin: -3, xmax: 6, ymin: -1, ymax: 7 });
+        pl.clear(); pl.axes({ xLabel: 'x₁', yLabel: 'x₂' });
+        pl.ctx.save();
+        pl.ctx.fillStyle = 'rgba(152,162,179,0.12)';
+        pl.ctx.fillRect(pl.pad.left, pl.Y(mid + m), pl.W - pl.pad.left - pl.pad.right, pl.Y(mid - m) - pl.Y(mid + m));
+        pl.ctx.restore();
+        pl.hline(mid, { color: Pl.ink, width: 2.5, dash: [] });
+        pl.hline(mid + m, { color: Pl.gray, dash: [5, 4] });
+        pl.hline(mid - m, { color: Pl.gray, dash: [5, 4] });
+        A.forEach(pt => pl.scatter([pt], { color: Pl.colors[0], r: Math.abs(Math.abs(mid - pt[1]) - m) < 0.25 ? 6.5 : 3.5, alpha: 0.85 }));
+        B.forEach(pt => pl.scatter([pt], { color: Pl.colors[1], r: Math.abs(Math.abs(pt[1] - mid) - m) < 0.25 ? 6.5 : 3.5, alpha: 0.85 }));
+        pl.legend([{ label: 'クラス A', color: Pl.colors[0] }, { label: 'クラス B', color: Pl.colors[1] }]);
+        pl.text(-3, 7, 'マージン幅 = ' + (2 * m).toFixed(2) + '（大きい点＝サポートベクター）', { align: 'left', baseline: 'top', dx: 56, dy: 4, color: '#475467', size: 12.5 });
+      },
+    },
+  });
+
+  /* --- ROC曲線・AUC・混同行列 --- */
+  T.push({
+    section: 'prep1', group: '多変量解析', id: 'roc-auc', title: 'ROC曲線・AUC・混同行列',
+    summary: '分類のしきい値を動かすと、真陽性率と偽陽性率がどうトレードオフするか——ROC曲線とAUCで分類器の性能を測ります。',
+    body: `
+<p>2値分類は「スコアがしきい値を超えたら陽性」と判定します。結果は<strong>混同行列</strong>にまとまります。</p>
+<table class="simple">
+<tr><th></th><th>実際:陽性</th><th>実際:陰性</th></tr>
+<tr><th>予測:陽性</th><td>TP</td><td>FP</td></tr>
+<tr><th>予測:陰性</th><td>FN</td><td>TN</td></tr>
+</table>
+<p>ここから、<strong>感度（真陽性率, TPR）</strong>$=\\dfrac{TP}{TP+FN}$、<strong>偽陽性率（FPR）</strong>$=\\dfrac{FP}{FP+TN}$、精度・適合率などが計算できます。</p>
+<p>しきい値を上げると陽性判定が減り、TPRもFPRも下がる——このトレードオフを全しきい値で描いたのが<strong>ROC曲線</strong>（横FPR・縦TPR）。曲線下面積が<strong>AUC</strong>で、1に近いほど良い分類器、0.5はランダム（対角線）です。</p>
+<div class="note">下でしきい値を動かすと、2つのスコア分布（陰性=青・陽性=橙）の重なりに対する判定が変わり、ROC曲線上の動作点（●）が移動します。2分布の重なりが小さいほどROCは左上に張り付き、AUCが1に近づきます。</div>`,
+    demo: {
+      note: 'しきい値を左右に振ると、感度と偽陽性率が同時に動きROC上の●が曲線をなぞる。分布の隔たり（分離度）を上げるとROCが左上へ膨らみAUCが1へ近づきます。',
+      controls: [
+        { type: 'range', id: 'sep', label: '2群の分離度', min: 0.2, max: 4, step: 0.1, value: 1.8 },
+        { type: 'range', id: 'thr', label: 'しきい値', min: -4, max: 8, step: 0.1, value: 2 },
+      ],
+      draw(canvas, p) {
+        const st = S(), Pl = P();
+        const dpr = window.devicePixelRatio || 1;
+        const W = canvas.clientWidth, H = canvas.clientHeight;
+        canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+        const ctx = canvas.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+        const sep = p.sep, thr = p.thr;
+        // 左: スコア分布  右: ROC
+        const lw = W * 0.54;
+        // 左パネル
+        const l = { xmin: -4, xmax: 8, ymin: 0, ymax: 0.45, padL: 40, padB: 34, padT: 14 };
+        const LX = v => l.padL + (v - l.xmin) / (l.xmax - l.xmin) * (lw - l.padL - 12);
+        const LY = v => H - l.padB - (v - l.ymin) / (l.ymax - l.ymin) * (H - l.padB - l.padT);
+        const drawCurve = (mu, col) => { ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath(); for (let i = 0; i <= 120; i++) { const x = l.xmin + (l.xmax - l.xmin) * i / 120; const y = st.normalPdf(x, mu, 1); i ? ctx.lineTo(LX(x), LY(y)) : ctx.moveTo(LX(x), LY(y)); } ctx.stroke(); };
+        drawCurve(0, Pl.colors[0]); drawCurve(sep, Pl.colors[1]);
+        ctx.strokeStyle = Pl.ink; ctx.lineWidth = 2; ctx.setLineDash([5, 4]); ctx.beginPath(); ctx.moveTo(LX(thr), LY(0)); ctx.lineTo(LX(thr), LY(0.45)); ctx.stroke(); ctx.setLineDash([]);
+        ctx.strokeStyle = '#c7cdd8'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(l.padL, LY(0)); ctx.lineTo(lw - 12, LY(0)); ctx.stroke();
+        ctx.fillStyle = '#475467'; ctx.font = '11.5px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('スコア分布（青=陰性, 橙=陽性）', lw / 2, H - 6);
+        // 現在のTPR/FPR
+        const TPR = 1 - st.normalCdf(thr, sep, 1);
+        const FPR = 1 - st.normalCdf(thr, 0, 1);
+        // 右パネル ROC
+        const rx = lw + 24, rw = W - rx - 16, rTop = 20, rBot = H - 40;
+        const RX = v => rx + v * rw, RY = v => rBot - v * (rBot - rTop);
+        ctx.strokeStyle = '#c7cdd8'; ctx.strokeRect(rx, rTop, rw, rBot - rTop);
+        ctx.strokeStyle = Pl.gray; ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.moveTo(RX(0), RY(0)); ctx.lineTo(RX(1), RY(1)); ctx.stroke(); ctx.setLineDash([]);
+        // ROC曲線
+        ctx.strokeStyle = Pl.colors[3]; ctx.lineWidth = 2.5; ctx.beginPath();
+        let auc = 0, prevF = 1, prevT = 1;
+        for (let i = 0; i <= 200; i++) {
+          const t = -4 + 12 * i / 200;
+          const f = 1 - st.normalCdf(t, 0, 1), tp = 1 - st.normalCdf(t, sep, 1);
+          i ? ctx.lineTo(RX(f), RY(tp)) : ctx.moveTo(RX(f), RY(tp));
+          auc += (prevF - f) * (tp + prevT) / 2; prevF = f; prevT = tp;
+        }
+        ctx.stroke();
+        ctx.fillStyle = Pl.ink; ctx.beginPath(); ctx.arc(RX(FPR), RY(TPR), 5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#475467'; ctx.textAlign = 'center'; ctx.fillText('ROC曲線', rx + rw / 2, H - 6);
+        ctx.textAlign = 'left'; ctx.fillText('FPR', RX(1) - 26, RY(0) + 14);
+        ctx.save(); ctx.translate(rx - 6, (rTop + rBot) / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'center'; ctx.fillText('TPR', 0, 0); ctx.restore();
+        ctx.fillStyle = Pl.ink; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'right';
+        ctx.fillText('AUC=' + auc.toFixed(3), RX(1) - 6, RY(0.08));
+        ctx.font = '12px sans-serif'; ctx.textAlign = 'left';
+        ctx.fillText('感度=' + TPR.toFixed(2) + ' / FPR=' + FPR.toFixed(2), RX(0) + 6, RY(1) - 6);
+      },
+    },
+  });
+
+  /* --- 共分散構造分析・パス解析 --- */
+  T.push({
+    section: 'prep1', group: '多変量解析', id: 'path-analysis', title: '共分散構造分析・パス解析（因子と因果図）',
+    summary: '観測変数の背後にある「潜在変数」と、変数間の因果の向きを図（パス図）で表し、直接効果・間接効果を分解する枠組みを俯瞰します。',
+    body: `
+<p><strong>因子分析</strong>は、多数の観測変数の相関を、少数の<strong>潜在変数（因子）</strong>で説明します。<a href="#/prep1/factor">因子分析</a>を発展させ、変数間に<strong>因果の向き</strong>を仮定して矢印で結んだのが<strong>パス解析</strong>、潜在変数と測定モデルまで含めた総合枠組みが<strong>共分散構造分析（構造方程式モデリング, SEM）</strong>です。</p>
+<h3>効果の分解</h3>
+<p>$X\\to M\\to Y$ で $X$ が $Y$ に影響するとき、</p>
+<p>$$ \\text{総合効果}=\\underbrace{(X\\to Y)}_{\\text{直接効果}}+\\underbrace{(X\\to M)(M\\to Y)}_{\\text{間接効果（媒介）}} $$</p>
+<p>各矢印の<strong>パス係数</strong>（標準化偏回帰係数）を、観測された相関・共分散が再現されるように推定します。適合度は $\\chi^2$、GFI、RMSEA、CFI などで評価します。</p>
+<h3>因子の回転</h3>
+<p>因子分析の解は回転で不定なので、解釈しやすくするために<strong>回転</strong>します。<strong>バリマックス</strong>（直交回転：因子間は無相関のまま各変数が少数因子に強く負荷）、<strong>プロマックス</strong>（斜交回転：因子間の相関を許す）が代表的。</p>
+<div class="note">下は $X\\to M\\to Y$ の媒介モデル。直接効果と媒介経路の係数を動かすと、総合効果に占める「直接」と「間接（媒介）」の割合が変わります。間接効果は2つのパス係数の積であることに注目してください。</div>`,
+    demo: {
+      note: '直接効果を0にすると「完全媒介」（XはMを通してのみYに効く）。間接効果=(X→M)×(M→Y)の積なので、途中経路がどちらか弱いと媒介は伝わりません。',
+      controls: [
+        { type: 'range', id: 'direct', label: '直接効果 X→Y', min: -0.8, max: 0.8, step: 0.05, value: 0.2 },
+        { type: 'range', id: 'xm', label: 'パス X→M', min: -0.9, max: 0.9, step: 0.05, value: 0.6 },
+        { type: 'range', id: 'my', label: 'パス M→Y', min: -0.9, max: 0.9, step: 0.05, value: 0.5 },
+      ],
+      draw(canvas, p) {
+        const Pl = P();
+        const dpr = window.devicePixelRatio || 1;
+        const W = canvas.clientWidth, H = canvas.clientHeight;
+        canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+        const ctx = canvas.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+        const indirect = p.xm * p.my, total = p.direct + indirect;
+        const nodes = { X: [W * 0.15, H * 0.7], M: [W * 0.5, H * 0.28], Y: [W * 0.85, H * 0.7] };
+        const drawNode = (name, pos) => { ctx.fillStyle = '#eef2ff'; ctx.strokeStyle = '#4f6df5'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(pos[0], pos[1], 30, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#1d2433'; ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(name, pos[0], pos[1]); };
+        const arrow = (a, b, coef, col) => {
+          const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L;
+          const x1 = a[0] + ux * 30, y1 = a[1] + uy * 30, x2 = b[0] - ux * 34, y2 = b[1] - uy * 34;
+          ctx.strokeStyle = col; ctx.lineWidth = 1 + 5 * Math.abs(coef); ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+          const ang = Math.atan2(y2 - y1, x2 - x1); ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(x2, y2); ctx.lineTo(x2 - 11 * Math.cos(ang - 0.4), y2 - 11 * Math.sin(ang - 0.4)); ctx.lineTo(x2 - 11 * Math.cos(ang + 0.4), y2 - 11 * Math.sin(ang + 0.4)); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = '#1d2433'; ctx.font = '13px sans-serif'; ctx.fillText(coef.toFixed(2), (x1 + x2) / 2, (y1 + y2) / 2 - 8);
+        };
+        arrow(nodes.X, nodes.M, p.xm, '#4f6df5');
+        arrow(nodes.M, nodes.Y, p.my, '#4f6df5');
+        arrow(nodes.X, nodes.Y, p.direct, '#e4572e');
+        drawNode('X', nodes.X); drawNode('M', nodes.M); drawNode('Y', nodes.Y);
+        ctx.fillStyle = '#475467'; ctx.font = '13px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+        ctx.fillText('直接効果 = ' + p.direct.toFixed(2), 16, H - 60);
+        ctx.fillText('間接効果 = (X→M)(M→Y) = ' + indirect.toFixed(2), 16, H - 40);
+        ctx.fillStyle = '#1d2433'; ctx.font = 'bold 13px sans-serif';
+        ctx.fillText('総合効果 = ' + total.toFixed(2), 16, H - 20);
+      },
+    },
+  });
+
+  /* --- 多次元尺度法・対応分析・正準相関 --- */
+  T.push({
+    section: 'prep1', group: '多変量解析', id: 'mds-ca', title: '多次元尺度法・対応分析・正準相関',
+    summary: '「距離・類似度を地図にする」「2つの変数群の関係を最大化する」——PCA以外の次元縮約・関連分析の手法を整理します。',
+    body: `
+<p>多変量解析には、主成分分析以外にも「関係を低次元で見る」手法群があります。</p>
+<h3>多次元尺度法（MDS）</h3>
+<p>個体間の<strong>距離（非類似度）行列</strong>だけを入力に、その距離をできるだけ保つように個体を2次元平面に配置します。都市間距離から地図を復元するイメージ。元の変数が分からず距離だけあるときに有効。計量MDSは距離の二乗行列を二重中心化して固有分解します（PCAと数理的に近い）。</p>
+<h3>対応分析（コレスポンデンス分析）</h3>
+<p><strong>分割表（クロス集計）</strong>の行と行、列と列の類似性を同じ平面に布置し、「どの行カテゴリとどの列カテゴリが結びつきやすいか」を可視化します。カイ二乗距離に基づく、質的データ版のPCA。アンケートのカテゴリ関連の把握に使います。</p>
+<h3>正準相関分析（CCA）</h3>
+<p>2つの<strong>変数群</strong> $\\boldsymbol X=(x_1,\\dots)$ と $\\boldsymbol Y=(y_1,\\dots)$ について、それぞれの線形結合 $\\boldsymbol a^\\top\\boldsymbol X$ と $\\boldsymbol b^\\top\\boldsymbol Y$ の<strong>相関が最大</strong>になる組を求めます。「学力テスト群」と「体力テスト群」の関係を1本の軸に凝縮するなど。回帰（片方向）や<a href="#/chemo/pls">PLS</a>（共分散最大化）と対比すると理解が深まります。</p>
+<div class="note">下は多次元尺度法のデモ。実際の都市配置（伏せた真の座標）から距離行列だけを作り、MDSで復元します。「距離だけ」から相対的な地図が再現できることを確認してください（向き・鏡像は不定）。</div>`,
+    demo: {
+      note: '真の配置（灰）から距離行列だけを取り出し、MDSで復元した配置（色つき）を重ねています。距離情報だけで相対位置がほぼ再現される点がMDSの核心。回転・反転の自由度は残ります。',
+      controls: [
+        { type: 'button', id: 'reseed', label: '別の配置で試す' },
+      ],
+      draw(canvas, p) {
+        const st = S(), Pl = P();
+        const rand = st.rng(5 + (p.reseed | 0) * 91);
+        const n = 8;
+        const truth = [];
+        for (let i = 0; i < n; i++) truth.push([4 * (rand() - 0.5) * 2, 4 * (rand() - 0.5) * 2]);
+        // 距離行列
+        const D = [];
+        for (let i = 0; i < n; i++) { D[i] = []; for (let j = 0; j < n; j++) D[i][j] = Math.hypot(truth[i][0] - truth[j][0], truth[i][1] - truth[j][1]); }
+        // 古典的MDS: B = -1/2 J D² J, 固有分解
+        const D2 = D.map(row => row.map(d => d * d));
+        const J = []; for (let i = 0; i < n; i++) { J[i] = []; for (let j = 0; j < n; j++) J[i][j] = (i === j ? 1 : 0) - 1 / n; }
+        const B = st.matmul(st.matmul(J, D2), J).map(row => row.map(v => -0.5 * v));
+        const eig = st.eigSym(B);
+        // 上位2固有ベクトル×√固有値
+        const idx = eig.values.map((v, i) => [v, i]).sort((a, b) => b[0] - a[0]);
+        const coords = [];
+        for (let i = 0; i < n; i++) {
+          const c1 = eig.vectors[i][idx[0][1]] * Math.sqrt(Math.max(0, idx[0][0]));
+          const c2 = eig.vectors[i][idx[1][1]] * Math.sqrt(Math.max(0, idx[1][0]));
+          coords.push([c1, c2]);
+        }
+        const pl = Pl.make(canvas, { xmin: -6, xmax: 6, ymin: -6, ymax: 6 });
+        pl.clear(); pl.axes({ xLabel: 'MDS 軸1', yLabel: 'MDS 軸2' });
+        pl.scatter(truth, { color: Pl.gray, r: 6, alpha: 0.5 });
+        coords.forEach((c, i) => { pl.scatter([c], { color: Pl.colors[i % Pl.colors.length], r: 6 }); pl.text(c[0], c[1], String(i + 1), { align: 'center', baseline: 'middle', color: '#fff', size: 10 }); });
+        pl.legend([{ label: '真の配置', color: Pl.gray }, { label: 'MDS復元', color: Pl.colors[0] }]);
+      },
+    },
+  });
+
+  /* --- 分割表の指標（オッズ比） --- */
+  T.push({
+    section: 'prep1', group: '分割表', id: 'odds-ratio', title: '分割表の指標（オッズ比・相対リスク・連関係数）',
+    summary: '2×2表から「関連の強さ」を測るオッズ比・相対リスク・ファイ係数を、表のセルを動かしながら計算・比較します。',
+    body: `
+<p>2×2分割表は「要因の有無」と「結果の有無」のクロス集計です。関連の強さを測る指標がいくつかあります。</p>
+<table class="simple">
+<tr><th></th><th>結果あり</th><th>結果なし</th></tr>
+<tr><th>曝露あり</th><td>$a$</td><td>$b$</td></tr>
+<tr><th>曝露なし</th><td>$c$</td><td>$d$</td></tr>
+</table>
+<ul>
+<li><strong>オッズ比</strong> $OR=\\dfrac{a/b}{c/d}=\\dfrac{ad}{bc}$：曝露群と非曝露群の「オッズ」の比。1なら関連なし。症例対照研究で使える。</li>
+<li><strong>相対リスク</strong> $RR=\\dfrac{a/(a+b)}{c/(c+d)}$：リスク（発生割合）の比。コホート研究で直接解釈できる。まれな結果では $OR\\approx RR$。</li>
+<li><strong>ファイ係数</strong> $\\phi=\\dfrac{ad-bc}{\\sqrt{(a+b)(c+d)(a+c)(b+d)}}$：2値×2値の相関係数。$\\chi^2=n\\phi^2$ と独立性検定に直結。</li>
+</ul>
+<div class="note">下で4つのセル度数を動かすと、各指標が再計算されます。$ad=bc$（対角の積が等しい）のとき $OR=1$・$\\phi=0$＝関連なし。まれな事象（$a,c$ が小さい）では OR と RR が近づくことも確かめてください。</div>`,
+    demo: {
+      note: 'ad=bc に近づけると OR→1・φ→0（無関連）。a を増やすと右上がりの関連が強まり OR・RR が上昇。まれな結果（a,c小）ほど OR と RR の差が縮まります。',
+      controls: [
+        { type: 'range', id: 'a', label: 'a: 曝露あり×結果あり', min: 1, max: 100, step: 1, value: 40 },
+        { type: 'range', id: 'b', label: 'b: 曝露あり×結果なし', min: 1, max: 100, step: 1, value: 60 },
+        { type: 'range', id: 'c', label: 'c: 曝露なし×結果あり', min: 1, max: 100, step: 1, value: 20 },
+        { type: 'range', id: 'd', label: 'd: 曝露なし×結果なし', min: 1, max: 100, step: 1, value: 80 },
+      ],
+      draw(canvas, p) {
+        const st = S(), Pl = P();
+        const a = p.a, b = p.b, c = p.c, d = p.d;
+        const OR = (a * d) / (b * c);
+        const RR = (a / (a + b)) / (c / (c + d));
+        const n = a + b + c + d;
+        const phi = (a * d - b * c) / Math.sqrt((a + b) * (c + d) * (a + c) * (b + d));
+        const chi2 = n * phi * phi;
+        const pval = 1 - st.chi2Cdf(chi2, 1);
+        const dpr = window.devicePixelRatio || 1;
+        const W = canvas.clientWidth, H = canvas.clientHeight;
+        canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+        const ctx = canvas.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+        // モザイク図（面積で度数を表現）
+        const x0 = 40, y0 = 30, mw = Math.min(W - 260, 320), mh = H - 90;
+        const rowTop = (a + b), rowBot = (c + d);
+        const hTop = mh * rowTop / n, hBot = mh * rowBot / n;
+        const cells = [
+          { x: x0, y: y0, w: mw * a / (rowTop || 1), h: hTop, col: '#4f6df5', lab: 'a=' + a },
+          { x: x0 + mw * a / (rowTop || 1), y: y0, w: mw * b / (rowTop || 1), h: hTop, col: '#a9b8f9', lab: 'b=' + b },
+          { x: x0, y: y0 + hTop, w: mw * c / (rowBot || 1), h: hBot, col: '#e4572e', lab: 'c=' + c },
+          { x: x0 + mw * c / (rowBot || 1), y: y0 + hTop, w: mw * d / (rowBot || 1), h: hBot, col: '#f2ad97', lab: 'd=' + d },
+        ];
+        cells.forEach(cl => { ctx.fillStyle = cl.col; ctx.fillRect(cl.x, cl.y, cl.w - 2, cl.h - 2); ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; if (cl.w > 24) ctx.fillText(cl.lab, cl.x + cl.w / 2, cl.y + cl.h / 2); });
+        ctx.fillStyle = '#66708a'; ctx.font = '11px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+        ctx.fillText('上段=曝露あり / 下段=曝露なし　左=結果あり', x0, y0 + mh + 8);
+        // 指標
+        const tx = x0 + mw + 26; let ty = y0 + 6;
+        const put = (t, v, col) => { ctx.fillStyle = col || '#1d2433'; ctx.font = '13.5px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(t + v, tx, ty); ty += 26; };
+        put('オッズ比 OR = ', OR.toFixed(2), OR > 1.05 ? '#e4572e' : OR < 0.95 ? '#2a9d8f' : '#1d2433');
+        put('相対リスク RR = ', RR.toFixed(2));
+        put('ファイ係数 φ = ', phi.toFixed(3));
+        put('χ² = ', chi2.toFixed(2) + '（df=1）');
+        put('p = ', (pval < 0.001 ? '<0.001' : pval.toFixed(3)), pval < 0.05 ? '#e4572e' : '#98a2b3');
+      },
+    },
+  });
+
+  /* --- 対数線形モデル --- */
+  T.push({
+    section: 'prep1', group: '分割表', id: 'log-linear', title: '対数線形モデル・条件つき独立性',
+    summary: '分割表の各セル度数の対数を「主効果＋交互作用」で表し、変数間の独立・条件つき独立をモデルとして検定する枠組みを俯瞰します。',
+    body: `
+<p>分割表の期待セル度数 $m_{ij}$ の<strong>対数</strong>を、分散分析のように要因の和で表すのが<strong>対数線形モデル</strong>です。</p>
+<p>$$ \\log m_{ij}=\\mu+\\lambda_i^{A}+\\lambda_j^{B}+\\lambda_{ij}^{AB} $$</p>
+<p>ここで<strong>交互作用項 $\\lambda_{ij}^{AB}$ が関連の強さ</strong>。これがゼロ（$\\lambda^{AB}=0$）のモデルは「$A$ と $B$ は独立」を意味し、当てはまりを $\\chi^2$ や尤度比で検定すれば、そのまま<strong>独立性の検定</strong>になります。</p>
+<h3>3元以上と条件つき独立</h3>
+<p>3変数 $A,B,C$ では、含める交互作用の組み合わせで階層的なモデル族ができます。例えば $A$–$B$ の関連が $C$ を与えると消える（$C$ を固定すると独立）なら<strong>条件つき独立</strong>。「見かけの関連」が第3変数で説明される（<a href="#/prep1/multiple-regression">交絡</a>と同じ構図）かを判定できます。変数間の条件つき独立関係を図示したものが<strong>グラフィカルモデル</strong>です。</p>
+<div class="note">対数線形モデルは、分割表を「回帰／分散分析の言葉」で扱えるようにする道具です。ロジスティック回帰とも数理的に結びつきます（応答を1変数に選べばロジスティック回帰に一致）。詳細は<a href="#/prep1/contingency">分割表とカイ二乗検定</a>・<a href="#/prep1/odds-ratio">オッズ比</a>と併せて学ぶと効果的です。</div>`,
+  });
+
+  /* --- 欠測データ --- */
+  T.push({
+    section: 'prep1', group: '計算統計・シミュレーション', id: 'missing-data', title: '欠測データ（欠測メカニズムとEMアルゴリズム）',
+    summary: '欠測の「起こり方」（MCAR/MAR/MNAR）によって、単純除外がバイアスを生むかどうかが変わる——その分岐と対処法を理解します。',
+    body: `
+<p>データの欠測は、その<strong>起こり方（欠測メカニズム）</strong>によって扱いが変わります。</p>
+<ul>
+<li><strong>MCAR（完全にランダム）</strong>：欠測が観測値とも欠測値とも無関係。単純除外（リストワイズ削除）でもバイアスなし（ただし情報は減る）。</li>
+<li><strong>MAR（ランダム）</strong>：欠測が<strong>観測されている他の変数</strong>で説明できる。適切な手法（多重代入・最尤）でバイアスを補正できる。</li>
+<li><strong>MNAR（ランダムでない）</strong>：欠測が<strong>その欠測値自身</strong>に依存（高所得者ほど収入を答えない等）。最も厄介で、メカニズムのモデル化が必要。</li>
+</ul>
+<h3>対処法</h3>
+<p><strong>リストワイズ削除</strong>は MCAR 以外ではバイアスの危険。<strong>多重代入法</strong>は欠測を複数回もっともらしく埋めて結果を統合。<strong>EMアルゴリズム</strong>は「E ステップ（欠測の期待値で補完）→ M ステップ（最尤推定）」を繰り返し、欠測がある下での最尤推定量に収束させます。</p>
+<div class="note">下は MAR の例。「$x$ が大きいほど $y$ が欠測しやすい」状況で、欠測を単純に捨てると（赤）回帰直線が真の関係（灰）からずれます。欠測の起こり方を知らずに捨てるのが危険、という反省点そのものです。</div>`,
+    demo: {
+      note: '欠測強度を上げると、xが大きい領域のyが抜け落ち、残ったデータ（赤）の回帰直線が真の直線（灰）から傾いてずれる。MARを無視した単純削除のバイアスが見えます。',
+      controls: [
+        { type: 'range', id: 'miss', label: '欠測の強さ（xが大→欠測）', min: 0, max: 1, step: 0.05, value: 0.6 },
+        { type: 'button', id: 'reseed', label: '再サンプル' },
+      ],
+      draw(canvas, p) {
+        const st = S(), Pl = P();
+        const rand = st.rng(63 + (p.reseed | 0) * 17);
+        const all = [], kept = [];
+        for (let i = 0; i < 80; i++) {
+          const x = rand() * 10;
+          const y = 1 + 0.8 * x + 1.5 * st.randn(rand);
+          const pmiss = p.miss * (x / 10);
+          const missing = rand() < pmiss;
+          all.push([x, y]);
+          if (!missing) kept.push([x, y]);
+        }
+        const fit = pts => { const X = pts.map(q => q[0]), Y = pts.map(q => q[1]); const mx = st.mean(X), my = st.mean(Y); let sxy = 0, sxx = 0; for (let i = 0; i < X.length; i++) { sxy += (X[i] - mx) * (Y[i] - my); sxx += (X[i] - mx) ** 2; } const b = sxy / sxx; return { b, a: my - b * mx }; };
+        const fAll = fit(all), fKept = fit(kept);
+        const pl = Pl.make(canvas, { xmin: 0, xmax: 10, ymin: -2, ymax: 12 });
+        pl.clear(); pl.axes({ xLabel: 'x', yLabel: 'y' });
+        const missPts = all.filter(q => !kept.includes(q));
+        pl.scatter(missPts, { color: Pl.gray, r: 3, alpha: 0.35 });
+        pl.scatter(kept, { color: Pl.colors[1], r: 3.5, alpha: 0.8 });
+        pl.line([[0, fAll.a], [10, fAll.a + fAll.b * 10]], { color: Pl.gray, width: 2, dash: [6, 4] });
+        pl.line([[0, fKept.a], [10, fKept.a + fKept.b * 10]], { color: Pl.colors[1], width: 2.5 });
+        pl.legend([{ label: '全データの直線（真）', color: Pl.gray }, { label: '欠測除外後の直線', color: Pl.colors[1] }]);
+      },
+    },
+  });
+
+  /* --- モンテカルロ法 --- */
+  T.push({
+    section: 'prep1', group: '計算統計・シミュレーション', id: 'monte-carlo', title: 'モンテカルロ法・乱数・棄却法',
+    summary: '乱数を大量に発生させて確率や積分を近似する考え方を、円周率πの推定で体感し、標準誤差が $1/\\sqrt{N}$ で縮むことを確かめます。',
+    body: `
+<p><strong>モンテカルロ法</strong>は、乱数を使って確率・期待値・積分を近似する方法です。「面積 = 当たった点の割合」で $\\pi$ を推定するのが定番。</p>
+<p>$$ \\frac{\\text{円内の点数}}{\\text{全点数}}\\approx\\frac{\\pi r^2/4}{r^2}=\\frac{\\pi}{4}\\ \\Rightarrow\\ \\pi\\approx 4\\times(\\text{当たり率}) $$</p>
+<p>推定の誤差（標準誤差）は $\\propto 1/\\sqrt N$。点数を100倍にして、やっと精度が10倍——という「遅いが確実」な収束です。高次元の積分でも次元に強く、実務で広く使われます。</p>
+<h3>棄却法（リジェクションサンプリング）</h3>
+<p>目標分布 $f$ から直接サンプルできないとき、簡単な分布 $g$ から出して「$f/g$ の割合で採択」すれば $f$ からのサンプルが得られます。包む $g$ が $f$ にフィットするほど採択率が上がり効率的です。</p>
+<div class="note">下で点数 $N$ を増やすと、円内（青）と円外（灰）の点から $\\pi$ の推定値が真値 $3.14159$ に近づきます。$N$ を4倍にすると誤差がおよそ半分になる（$\\sqrt N$ 則）ことを確かめてください。</div>`,
+    demo: {
+      note: '点を増やすほど推定πが真値に近づくが収束は遅い（1/√N）。Nを4倍にして誤差が約半分。乱数の当たり率×4がπ、という素朴な面積比の原理です。',
+      controls: [
+        { type: 'range', id: 'logn', label: '点数 N = 10^', min: 1.5, max: 4, step: 0.1, value: 2.7 },
+        { type: 'button', id: 'reseed', label: '振り直す' },
+      ],
+      draw(canvas, p) {
+        const st = S(), Pl = P();
+        const rand = st.rng(9 + (p.reseed | 0) * 53);
+        const N = Math.round(Math.pow(10, p.logn));
+        const inside = [], outside = [];
+        let hit = 0;
+        const showMax = 3000;
+        for (let i = 0; i < N; i++) {
+          const x = rand() * 2 - 1, y = rand() * 2 - 1;
+          const isIn = x * x + y * y <= 1;
+          if (isIn) hit++;
+          if (i < showMax) (isIn ? inside : outside).push([x, y]);
+        }
+        const piEst = 4 * hit / N;
+        const pl = Pl.make(canvas, { xmin: -1, xmax: 1, ymin: -1, ymax: 1, pad: { left: 40, right: 14, top: 14, bottom: 34 } });
+        pl.clear(); pl.axes({ xLabel: 'x', yLabel: 'y', xTicks: [-1, 0, 1], yTicks: [-1, 0, 1] });
+        pl.scatter(outside, { color: Pl.gray, r: 1.8, alpha: 0.4 });
+        pl.scatter(inside, { color: Pl.colors[0], r: 1.8, alpha: 0.5 });
+        // 円
+        const circle = [];
+        for (let a = 0; a <= 80; a++) { const t = a / 80 * 2 * Math.PI; circle.push([Math.cos(t), Math.sin(t)]); }
+        pl.line(circle, { color: Pl.colors[1], width: 2 });
+        pl.text(-1, 1, 'N=' + N + '　π推定=' + piEst.toFixed(4) + '　誤差=' + Math.abs(piEst - Math.PI).toFixed(4), { align: 'left', baseline: 'top', dx: 46, dy: 4, color: '#475467', size: 12.5 });
+      },
+    },
+  });
+
+  /* --- MCMC --- */
+  T.push({
+    section: 'prep1', group: '計算統計・シミュレーション', id: 'mcmc', title: 'MCMC（メトロポリス法・ギブスサンプリング）',
+    summary: '直接サンプルできない事後分布から、「少しずつ動いては採否を決める」連鎖で標本を集めるMCMCの仕組みを、ヒストグラムの立ち上がりで見ます。',
+    body: `
+<p><a href="#/prep1/bayes">ベイズ</a>の事後分布は、正規化定数（分母）が計算できず直接サンプルできないことが多い。そこで<strong>マルコフ連鎖</strong>を使い、定常分布が目標分布になるように標本を生成するのが<strong>MCMC</strong>です。</p>
+<h3>メトロポリス・ヘイスティングス法</h3>
+<ol>
+<li>現在地 $\\theta$ の近くに候補 $\\theta'$ を提案する。</li>
+<li>採択確率 $\\alpha=\\min\\!\\left(1,\\dfrac{p(\\theta')}{p(\\theta)}\\right)$ で受け入れる（比なので正規化定数が消える！）。</li>
+<li>受け入れれば移動、拒否すればその場に留まる。これを繰り返す。</li>
+</ol>
+<p>比 $p(\\theta')/p(\\theta)$ しか使わないので、規格化できない分布でも動きます。<strong>ギブスサンプリング</strong>は、多変数のとき「他を固定して1変数ずつ条件付き分布から引く」特別な場合で、条件付き分布が既知なら提案不要で効率的。初期の<strong>バーンイン</strong>（連鎖が定常に達するまで）は捨てます。</p>
+<div class="note">下は2つの山を持つ目標分布（直接サンプル困難）を、メトロポリス法でサンプルした結果。ステップ数を増やすとヒストグラム（青）が目標分布（オレンジ線）に一致していきます。提案の歩幅が大きすぎ／小さすぎると収束が悪くなります。</div>`,
+    demo: {
+      note: 'ステップを増やすとサンプルのヒストグラムが目標分布（2つの山）に一致。歩幅が大きすぎると拒否だらけ、小さすぎると動きが遅く、どちらも収束が悪化します。',
+      controls: [
+        { type: 'range', id: 'logsteps', label: 'ステップ数 = 10^', min: 2, max: 5, step: 0.1, value: 3.5 },
+        { type: 'range', id: 'step', label: '提案の歩幅', min: 0.2, max: 4, step: 0.1, value: 1.2 },
+        { type: 'button', id: 'reseed', label: '再サンプル' },
+      ],
+      draw(canvas, p) {
+        const st = S(), Pl = P();
+        const rand = st.rng(45 + (p.reseed | 0) * 67);
+        // 目標: 2つの正規の混合
+        const target = x => 0.6 * st.normalPdf(x, -2, 0.8) + 0.4 * st.normalPdf(x, 2.2, 1.0);
+        const steps = Math.round(Math.pow(10, p.logsteps));
+        const burn = Math.floor(steps * 0.2);
+        let x = 0; const samples = []; let accept = 0;
+        for (let i = 0; i < steps; i++) {
+          const xp = x + p.step * st.randn(rand);
+          const a = target(xp) / target(x);
+          if (rand() < a) { x = xp; accept++; }
+          if (i >= burn) samples.push(x);
+        }
+        const bins = st.histogram(samples, 44, -6, 6);
+        const ymax = 0.32;
+        const pl = Pl.make(canvas, { xmin: -6, xmax: 6, ymin: 0, ymax });
+        pl.clear(); pl.axes({ xLabel: 'θ', yLabel: '密度' });
+        pl.bars(bins.map(b => ({ x0: b.x0, x1: b.x1, y: b.density })), { color: Pl.colors[0], alpha: 0.55 });
+        const xs = st.linspace(-6, 6, 240);
+        pl.line(xs.map(v => [v, target(v)]), { color: Pl.colors[1], width: 2.5 });
+        pl.legend([{ label: 'MCMC標本', color: Pl.colors[0] }, { label: '目標分布', color: Pl.colors[1] }]);
+        pl.text(-6, ymax, 'ステップ=' + steps + '　採択率=' + (accept / steps * 100).toFixed(0) + '%（20〜50%が目安）', { align: 'left', baseline: 'top', dx: 46, dy: 4, color: '#475467', size: 12.5 });
+      },
+    },
+  });
+
+  /* --- 標本調査法 --- */
+  T.push({
+    section: 'prep1', group: '標本調査法', id: 'sampling-survey', title: '標本調査法（有限修正・抽出法）',
+    summary: '有限母集団から抽出するときの「有限修正」と、単純無作為・層化・クラスターといった抽出デザインの違いを整理します。',
+    body: `
+<p>有限母集団（大きさ $N$）から $n$ 個を<strong>非復元</strong>で抽出するとき、標本平均の分散には<strong>有限母集団修正（FPC）</strong>がかかります。</p>
+<p>$$ V[\\bar x]=\\frac{\\sigma^2}{n}\\cdot\\underbrace{\\frac{N-n}{N-1}}_{\\text{有限修正}} $$</p>
+<p>$n$ が $N$ に近づくほど修正係数は0に近づき、全数調査（$n=N$）なら分散はゼロ。$N\\gg n$ なら修正はほぼ1で無視できます。</p>
+<h3>代表的な抽出デザイン</h3>
+<ul>
+<li><strong>単純無作為抽出 (SRS)</strong>：全員に等しい確率。基準となる方法。</li>
+<li><strong>層化抽出</strong>：母集団を似た者どうしの<strong>層</strong>に分け、各層から抽出。層内が均質なら<strong>分散が下がる</strong>（効率的）。</li>
+<li><strong>クラスター抽出</strong>：集落（学校・地区）単位で抽出。コストは下がるが、集落内が似ていると<strong>分散は上がりがち</strong>。</li>
+<li><strong>系統抽出</strong>：一定間隔で抽出。周期性があると偏る危険。</li>
+</ul>
+<div class="note">下で抽出率 $n/N$ を上げると、有限修正により標本平均の分散（標準誤差）が縮み、全数調査に近づくとゼロになる様子が見えます。「母集団の大きさ $N$ ではなく、主に標本サイズ $n$ が精度を決める」——ただし $n/N$ が大きいときは修正が効きます。</div>`,
+    demo: {
+      note: '抽出率 n/N を1(全数)に近づけると標準誤差が0へ。N≫n の領域では曲線がほぼ平ら＝有限修正はほぼ無視でき、精度は n でほぼ決まります。',
+      controls: [
+        { type: 'range', id: 'N', label: '母集団の大きさ N', min: 50, max: 2000, step: 50, value: 500 },
+        { type: 'range', id: 'ratio', label: '抽出率 n/N (%)', min: 1, max: 100, step: 1, value: 20 },
+      ],
+      draw(canvas, p) {
+        const st = S(), Pl = P();
+        const N = Math.round(p.N), sigma = 10;
+        const rs = st.linspace(0.01, 1, 120);
+        const se = rs.map(r => { const n = Math.max(1, r * N); return [r * 100, sigma / Math.sqrt(n) * Math.sqrt((N - n) / (N - 1 || 1))]; });
+        const seNoFpc = rs.map(r => { const n = Math.max(1, r * N); return [r * 100, sigma / Math.sqrt(n)]; });
+        const pl = Pl.make(canvas, { xmin: 0, xmax: 100, ymin: 0, ymax: sigma / Math.sqrt(Math.max(1, 0.01 * N)) * 1.05 });
+        pl.clear(); pl.axes({ xLabel: '抽出率 n/N (%)', yLabel: '標本平均の標準誤差' });
+        pl.line(seNoFpc, { color: Pl.gray, width: 1.8, dash: [6, 4] });
+        pl.line(se, { color: Pl.colors[0], width: 2.5 });
+        const rNow = p.ratio;
+        pl.vline(rNow, { color: Pl.ink, dash: [4, 3] });
+        const nNow = Math.round(rNow / 100 * N);
+        const seNow = sigma / Math.sqrt(nNow) * Math.sqrt((N - nNow) / (N - 1));
+        pl.legend([{ label: '有限修正あり', color: Pl.colors[0] }, { label: '修正なし σ/√n', color: Pl.gray }]);
+        pl.text(100, pl.ymax, 'n=' + nNow + '　SE=' + seNow.toFixed(2), { align: 'right', baseline: 'top', dx: -8, dy: 4, color: '#475467', size: 12.5 });
+      },
+    },
+  });
+
+  /* --- ブロック計画・乱塊法・一部実施 --- */
+  T.push({
+    section: 'prep1', group: '分散分析と実験計画（範囲内）', id: 'blocking-designs', title: '乱塊法・一部実施要因計画・直交配列',
+    summary: 'ブロック化で誤差を減らす乱塊法と、要因が多いとき実験回数を賢く間引く一部実施要因計画・直交配列の考え方を押さえます。',
+    body: `
+<p>実験計画の<a href="#/prep1/principles">局所管理</a>を具体化する手法です。</p>
+<h3>乱塊法（乱塊ブロック計画）</h3>
+<p>日・装置・被験者など、ばらつきの原因になる要因を<strong>ブロック</strong>にまとめ、各ブロック内で全処理を無作為順に実施します。ブロック間の変動を分散分析表で分離することで、<strong>誤差分散が小さくなり検出力が上がります</strong>。</p>
+<p>$$ SS_\\text{total}=SS_\\text{処理}+SS_\\text{ブロック}+SS_\\text{誤差} $$</p>
+<h3>一部実施要因計画（fractional factorial）</h3>
+<p>要因が $k$ 個・各2水準だと全実施は $2^k$ 回。要因が増えると爆発するので、<strong>一部（$2^{k-p}$）だけ</strong>を賢く選んで実施します。代償は<strong>交絡（別名, alias）</strong>——ある要因の主効果が、別の高次交互作用と区別できなくなること。高次交互作用は無視できるという仮定（疎性）のもとで成立します。</p>
+<h3>直交配列（直交表）</h3>
+<p><a href="#/doe/orthogonal">直交表</a>は一部実施要因計画を表にしたもの。どの2列も水準組合せが均等に現れる「直交性」により、少ない実験で主効果を偏りなく推定できます。分解能（resolution）が別名構造の良し悪しを表します。</p>
+<div class="note">下は乱塊法の効果。ブロック間変動（例：日ごとの差）が大きいとき、それを分離せず誤差に含めると処理効果が埋もれます。「ブロックとして分離」をオンにすると誤差が縮み、同じ処理差でも検出力（F値）が上がることが確認できます。</div>`,
+    demo: {
+      note: 'ブロック変動を分離しないと誤差分散に混入しF値が小さく有意になりにくい。「分離する」をオンにすると誤差が縮みF値が跳ね上がる＝乱塊法の御利益です。',
+      controls: [
+        { type: 'range', id: 'blockvar', label: 'ブロック間のばらつき', min: 0, max: 6, step: 0.5, value: 3 },
+        { type: 'select', id: 'sep', label: 'ブロックの扱い', value: 'no', options: [
+          { value: 'no', label: '分離しない（誤差に混入）' },
+          { value: 'yes', label: 'ブロックとして分離' },
+        ]},
+        { type: 'button', id: 'reseed', label: '再サンプル' },
+      ],
+      draw(canvas, p) {
+        const st = S(), Pl = P();
+        const rand = st.rng(88 + (p.reseed | 0) * 31);
+        const nTreat = 3, nBlock = 5;
+        const treatEff = [-2, 0, 2];
+        const blockEff = [];
+        for (let b = 0; b < nBlock; b++) blockEff.push(p.blockvar * st.randn(rand));
+        const data = []; // {treat, block, y}
+        for (let t = 0; t < nTreat; t++) for (let b = 0; b < nBlock; b++) data.push({ t, b, y: 20 + treatEff[t] + blockEff[b] + 1.0 * st.randn(rand) });
+        const grand = st.mean(data.map(d => d.y));
+        // 処理平方和
+        let ssT = 0; for (let t = 0; t < nTreat; t++) { const m = st.mean(data.filter(d => d.t === t).map(d => d.y)); ssT += nBlock * (m - grand) ** 2; }
+        // ブロック平方和
+        let ssB = 0; for (let b = 0; b < nBlock; b++) { const m = st.mean(data.filter(d => d.b === b).map(d => d.y)); ssB += nTreat * (m - grand) ** 2; }
+        let ssTot = 0; for (const d of data) ssTot += (d.y - grand) ** 2;
+        let ssE, dfE;
+        if (p.sep === 'yes') { ssE = ssTot - ssT - ssB; dfE = (nTreat - 1) * (nBlock - 1); }
+        else { ssE = ssTot - ssT; dfE = nTreat * nBlock - nTreat; } // ブロックを誤差に含める
+        const F = (ssT / (nTreat - 1)) / (ssE / dfE);
+        const pval = 1 - st.fCdf(F, nTreat - 1, dfE);
+        // 描画: 各処理の点をブロック色で
+        const pl = Pl.make(canvas, { xmin: 0.3, xmax: nTreat + 0.7, ymin: grand - 12, ymax: grand + 12 });
+        pl.clear(); pl.axes({ xLabel: '処理', yLabel: '測定値', xTicks: [1, 2, 3], xFmt: v => '処理' + v });
+        for (const d of data) pl.scatter([[d.t + 1 + (d.b - 2) * 0.08, d.y]], { color: Pl.colors[d.b % Pl.colors.length], r: 4, alpha: 0.85 });
+        for (let t = 0; t < nTreat; t++) { const m = st.mean(data.filter(d => d.t === t).map(d => d.y)); pl.ctx.strokeStyle = Pl.ink; pl.ctx.lineWidth = 3; pl.ctx.beginPath(); pl.ctx.moveTo(pl.X(t + 0.75), pl.Y(m)); pl.ctx.lineTo(pl.X(t + 1.25), pl.Y(m)); pl.ctx.stroke(); }
+        pl.text(0.3, grand + 12, 'F(処理) = ' + F.toFixed(2) + '　p = ' + (pval < 0.001 ? '<0.001' : pval.toFixed(3)) + (pval < 0.05 ? ' ✓有意' : ''), { align: 'left', baseline: 'top', dx: 56, dy: 4, color: pval < 0.05 ? '#2a9d8f' : '#475467', size: 13 });
+        pl.text(0.3, grand + 12, '点の色＝ブロック（例：測定日）', { align: 'left', baseline: 'top', dx: 56, dy: 24, color: '#98a2b3', size: 11.5 });
+      },
+    },
+  });
+
+})();
