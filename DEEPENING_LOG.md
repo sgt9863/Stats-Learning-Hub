@@ -83,7 +83,7 @@
 | **prep1/acf-pacf** | o | o | o | o | o | 0 | ✅Iter.25 |
 | math/vectors-matrices | d | d | x | o | - | 2 | |
 | math/matrix-ops | o | d | x | o | x | 2.5 | |
-| math/linearization | d | d | x | d | x | 3.5 | |
+| **math/linearization** | o | o | o | o | o | 0 | ✅Iter.31 |
 | math/gradient | o | d | x | d | x | 3 | |
 | math/eigen | o | o | x | o | - | 1 | |
 | math/covariance-matrix | o | d | x | d | - | 2 | |
@@ -575,3 +575,24 @@
 **次に深掘りすべきトピック**: `math/linearization`（gap 3.5・数学基礎で最大gap）、`math/gradient`（gap 3.0）、`prep1/odds-ratio`（gap 2.5・contingencyと対）。
 
 （注: Iter.27 MCMC は並行セッションが処理済み。マトリクスで完了を確認してから選ぶこと）
+
+## 2026-07-05 — Iter.31
+
+**対象トピック**: `math/linearization`（変数変換と線形化）
+
+**選定理由**: gap 3.5・数学基礎で最大gap。指数/アレニウスの例（L2部分）とデモ（L4）はあったが、線形化できる一般則・「誤差構造が変わる」核心（L3/L5）が欠落。回帰の前処理として重要。
+
+**埋めた層**
+- **L2（強化）**: 線形化できる形（べき則→両対数、ミカエリス・メンテン→逆数）。核心＝対数変換は誤差構造も変換する。乗法誤差なら$\ln y$回帰が正しく最適、加法誤差なら偏る→NLS。
+- **L3（新規）**: 前提表——誤差が乗法的（加法→NLS/WLS）／変換の定義域（$y>0$）／逆変換の平均バイアス（スミアリング）／変換後の直線性（残差確認）。
+- **L5（新規）**: 変換後スケールの$R^2$・有意性は生データの予測精度と別物。線形化は頑健な出発点、最終係数は加法誤差ならNLS。逆変換時 $\exp(\sigma^2/2)$ 補正。
+- **L1/L4（温存）**: 既存の指数・アレニウスの直感とデモは保持。
+
+**検算結果（python3 + scipy 独立実装）**
+- べき則 $y=Ax^b$ 両対数: 傾き=1.5000（真b）、切片exp=2.00（真A）。✅
+- 乗法対数正規誤差: $\ln y$回帰の $\hat k=0.4996$（真0.5・不偏）。✅
+- 加法等分散誤差: $\ln y$回帰 $\hat k=0.95$（偏り）vs NLS-on-raw $\hat k=0.504$（正）。線形化が誤差構造を変える実証。✅
+- 逆変換バイアス $\exp(\sigma^2/2)$, σ=0.2 → 1.0202。✅
+- 検証: node --check・verify-topics.js パス（85/85）。内部リンク（multiple-regression, mle）実在。✅
+
+**次に深掘りすべきトピック**: `math/gradient`（gap 3.0・勾配と最適化）、`prep1/odds-ratio`（gap 2.5・contingencyと対）、`prep1/clt`（gap 2.5・中心極限定理）。
