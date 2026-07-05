@@ -12,7 +12,7 @@
 | section/id | L1 | L2 | L3 | L4 | L5 | gap | 状態 |
 |---|:-:|:-:|:-:|:-:|:-:|:-:|---|
 | prep1/transformations | o | d | d | o | - | 1 | |
-| prep1/timeseries | d | d | d | o | x | 2.5 | |
+| **prep1/timeseries** | o | o | o | o | o | 0 | ✅Iter.13 |
 | prep1/three-tests | o | x | x | d | x | 3.5 | |
 | **prep1/testing** | o | o | o | o | o | 0 | ✅Iter.2で深掘り済 |
 | prep1/svm | o | d | d | o | x | 2 | |
@@ -37,7 +37,7 @@
 | prep1/nonparametric | o | d | o | o | x | 1.5 | |
 | prep1/neyman-pearson | o | d | x | o | o | 1.5 | |
 | prep1/multivariate-normal | o | d | x | o | - | 1.5 | |
-| prep1/multiple-regression | o | d | x | d | x | 3 | |
+| **prep1/multiple-regression** | o | o | o | o | o | 0 | ✅Iter.10 |
 | prep1/multiple-comparison | o | d | x | o | o | 1.5 | |
 | prep1/multicollinearity | o | d | d | d | x | 2.5 | |
 | prep1/monte-carlo | o | d | x | o | x | 2.5 | |
@@ -50,7 +50,7 @@
 | prep1/mds-ca | x | x | x | d | x | 4.5 | |
 | prep1/mcmc | d | x | x | d | - | 3 | |
 | prep1/markov-chain | o | d | x | d | - | 2 | |
-| prep1/logistic | o | d | x | d | x | 3 | |
+| **prep1/logistic** | o | o | o | o | o | 0 | ✅Iter.9 |
 | prep1/log-linear | o | d | d | x | x | 3 | |
 | prep1/lln | o | d | x | d | - | 2 | |
 | **prep1/lda** | o | o | o | o | o | 0 | ✅Iter.7 |
@@ -58,7 +58,7 @@
 | prep1/joint-distribution | o | x | x | d | - | 2.5 | |
 | prep1/interaction | o | d | x | o | - | 1.5 | |
 | prep1/goodness-of-fit | o | d | x | o | x | 2.5 | |
-| prep1/glm | o | x | x | o | x | 3 | |
+| **prep1/glm** | o | o | o | o | o | 0 | ✅Iter.12 |
 | prep1/gauss-markov | o | d | o | x | x | 2.5 | |
 | prep1/fisher-cramer-rao | o | d | x | d | x | 3 | |
 | prep1/factor | o | d | d | d | x | 2.5 | |
@@ -77,7 +77,7 @@
 | prep1/clt | o | d | x | o | x | 2.5 | |
 | prep1/bootstrap | o | x | x | d | x | 3.5 | |
 | prep1/blocking-designs | x | d | d | d | o | 2.5 | |
-| prep1/bayes | o | d | x | o | x | 2.5 | |
+| **prep1/bayes** | o | o | o | o | o | 0 | ✅Iter.11 |
 | prep1/arima | o | x | d | o | x | 2.5 | |
 | **prep1/anova1** | o | o | o | o | o | 0 | ✅Iter.4で深掘り済 |
 | prep1/acf-pacf | o | d | x | d | x | 3 | |
@@ -203,3 +203,39 @@
 - 検算: $t$ の分散 $k/(k-2)\to1$ (k→∞)、$E[\chi^2_k/k]=1$。✅
 
 **ループ停止（ユーザー指示）**: 8トピック（regression, testing, confidence, anova1, mle, pca, lda, distributions）を5層化した時点で停止。残る候補と優先順は本ログのマトリクス参照（次点: logistic, multiple-regression, bayes, glm, timeseries）。
+
+## 2026-07-06 — 再開: Iter.9-13（回帰の応用と推論の広がり）
+
+前回申し送りの次点5トピックを一括で5層化。いずれも node --check OK / KaTeXエラー0 / 内部リンク実在（デッドリンク0、サンドボックス描画検証済）。
+
+**Iter.9 `prep1/logistic`（ロジスティック回帰）** — 初期 `odxdx`
+- L2強化: ロジット $\ln\frac{p}{1-p}=a+bx$（オッズの対数が線形）→係数の意味は $e^b$＝オッズ比。ベルヌーイ尤度→対数尤度 $\ell=\sum[y\ln p+(1-y)\ln(1-p)]$ の最尤推定、閉形式なし→IRLS。GLMの代表例としてリンク。
+- L3新規: 前提表（ロジット線形性／独立性／完全分離なし／イベント数EPV≥10）。完全分離でMLE発散（$|\hat b|\to\infty$）→正則化・Firth。デモの「分離度↑で傾きがいくらでも急にできる」との接続を明記。
+- L5新規: Wald検定の有意とオッズ比の効果量は別。ROC/AUC・不均衡時の適合率再現率・キャリブレーション。
+- 検算: ロジット逆変換・オッズ比 $e^b$／完全分離の尤度単調増加。✅
+
+**Iter.10 `prep1/multiple-regression`（重回帰と計画行列）** — 初期 `odxdx`
+- L2強化: 正規方程式 $X^\top X\boldsymbol\beta=X^\top\boldsymbol y$ と「$\hat{\boldsymbol y}$ は列空間への直交射影（残差が全説明変数と直交）」の幾何。単回帰の「重心を通る」の一般化。
+- L3新規: 重回帰固有の前提表（フルランク／強い共線性なし／$n\gg p$（$p{+}1{=}n$で完全適合）／欠落変数バイアス）。
+- L5新規: 全体F vs 個々のt（「他の変数を入れたうえで」の意味）、共線性で両方非有意になる症状、標準化偏回帰係数、調整済み$R^2$/AIC。
+- 検算: 残差直交性 $X^\top(\boldsymbol y-X\hat{\boldsymbol\beta})=0$／$R^2$の単調非減少。✅
+
+**Iter.11 `prep1/bayes`（ベイズ推定）** — 初期 `odxox`
+- L2強化: 共役性の「なぜ」（$\theta^{k}(1-\theta)^{n-k}\times\theta^{a-1}(1-\theta)^{b-1}$ が同形）と、事後平均＝事前平均と標本比率の重み付き平均 $\frac{a+k}{a+b+n}=\frac{a+b}{a+b+n}\frac{a}{a+b}+\frac{n}{a+b+n}\frac{k}{n}$。
+- L3新規: 事前の感度（小標本）／モデル誤特定は頻度論と同じ弱点（事後予測チェック）／共役は便宜→MCMCへ。
+- L5新規: 信用区間 vs 信頼区間の解釈差、$P(\theta>0.5\mid D)$ 型の直接回答、分布の幅ごと報告。
+- 検算: 事後 $\mathrm{Beta}(a+k,b+n-k)$・重み付き平均分解の恒等式。✅
+
+**Iter.12 `prep1/glm`（一般化線形モデル）** — 初期 `oxxox`
+- L2新規: リンク関数の必然性（$\mu$ の範囲制約と $\eta\in\mathbb R$ の橋渡し）、分散が分布から決まる（二項 $\mu(1-\mu)$・ポアソン $\mu$）＝等分散を仮定しない、逸脱度と尤度比検定。
+- L3新規: 前提表（分布指定=過分散→負の二項/準ポアソン／リンク上の線形性／独立性→GLMM/GEE／ゼロ過剰→ZIP）。
+- L5新規: 係数はリンク逆変換で読む（対数リンク→率比 $e^\beta$）、過分散無視の「有意」は見かけ。
+- 検算: ポアソン $\mathrm{Var}=\mu$・二項分散・入れ子モデルの逸脱度差$\sim\chi^2$。✅
+
+**Iter.13 `prep1/timeseries`（時系列の基礎）** — 初期 `dddox`
+- L1/L2強化: 弱定常の3条件を明示。定常条件の導出 $v=\phi^2v+\sigma^2\Rightarrow v=\sigma^2/(1-\phi^2)$（$|\phi|\ge1$で正の解なし＝非定常の正体）、$\rho_k=\phi^k$。
+- L3強化: 前提表（定常性→見せかけの回帰・ADF・階差／構造変化／残差の無相関→ACF/PACF診断）。
+- L5新規: 実効標本サイズ $n_{\mathrm{eff}}\approx n\frac{1-\phi}{1+\phi}$（$\phi=0.7$で約18%）→独立標本用SEは過小評価。「時系列の有意はまず定常性と残差診断から」。
+- 検算: $v=1/(1-0.49)=1.96$（$\phi=0.7,\sigma=1$）・$n_{\mathrm{eff}}/n=0.176$。✅
+
+**次に深掘りすべきトピック**（gap大・依存関係順）: `prep1/mds-ca`(4.5, L1から欠落), `prep1/three-tests`(3.5), `prep1/sufficiency`(3.5), `prep1/bootstrap`(3.5), `prep1/orthogonal`(3.5), `prep1/moment-method`(3.5), `chemo/pls-da`(3.5)。検定論の土台として three-tests（尤度比/ワルド/スコア）を優先推奨。
