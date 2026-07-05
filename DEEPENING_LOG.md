@@ -93,7 +93,7 @@
 | doe/d-optimal | o | d | d | o | x | 2 | |
 | doe/ccd | o | x | x | o | x | 3 | |
 | **chemo/pls-da** | o | o | o | o | o | 0 | ✅Iter.20 |
-| chemo/pls | o | d | x | d | x | 3 | |
+| **chemo/pls** | o | o | o | o | o | 0 | ✅Iter.28 |
 | chemo/opls-da | o | x | x | d | - | 2.5 | |
 | **prep1/regression** | o | o | o | o | o | 0 | ✅Iter.1で深掘り済 |
 
@@ -514,3 +514,22 @@
 - 検証: node --check・verify-topics.js パス（85/85）。内部リンク（bayes）実在。✅
 
 **次に深掘りすべきトピック**: `chemo/pls`（gap 3.0・L5欠落・分析化学）、`doe/ccd`（gap 3.0・中心複合計画）、`prep1/contingency`（gap 3.0・L1から）。
+
+## 2026-07-05 — Iter.28
+
+**対象トピック**: `chemo/pls`（PLS回帰・部分最小二乗回帰）
+
+**選定理由**: gap 3.0・分析化学（ユーザー関心領域）。L1直感と予測散布デモ（L4）はあったが、L2はNIPALSの中身・PCRとの違いが未説明、L3前提とL5（R² vs Q²）が欠落。PLS-DA/OPLS-DAの土台。
+
+**埋めた層**
+- **L2（新規）**: NIPALS——第1重み $w_1\propto X^\top y$（共分散最大方向）→スコア→デフレーション→反復、最終係数 $\hat\beta=W(P^\top W)^{-1}q$。PCRとの違い（PCRは$y$を見ず分散最大方向を拾う→無関係方向を先取り、PLSは共分散で少成分）。
+- **L3（新規）**: 前提表——中心化/標準化（スケール独占）／成分数はCV（$p\gg n$過学習）／低ランク線形（非線形→カーネルPLS）／校正範囲内（外挿→$T^2$・$Q$残差）。
+- **L5（新規）**: 校正$R^2$は成分数で単調増→証拠にならない。$Q^2$/RMSECVで判断（真次元でピーク）、$R^2-Q^2$乖離＝過学習。VIP・独立試料RMSEP。
+- **L4（既存デモ活用）**: 成分数を増やすと当てはまり上昇だが真の2成分超で汎化悪化、をL5の$Q^2$と接続。
+
+**検算結果（python3 独立実装）**
+- 第1PLS重み ∝ $X^\top y$: cos=1.000000。✅
+- $R^2$校正 vs $Q^2$(LOO): 成分数1→10で $R^2$ 0.951→0.977→0.989→0.992→0.993（単調増）、$Q^2$ 0.938→0.972→0.976→0.973→0.969（$A{=}2{\sim}3$でピーク→減）。真の潜在次元2と整合。✅
+- 検証: node --check・verify-topics.js パス（85/85）。内部リンク（pca, overfitting, crossval, multiple-regression, multicollinearity）実在。✅
+
+**次に深掘りすべきトピック**: `doe/ccd`（gap 3.0・中心複合計画）、`prep1/contingency`（gap 3.0・L1から）、`math/linearization`（gap 3.5・数学基礎）。
