@@ -64,7 +64,7 @@
 | prep1/factor | o | d | d | d | x | 2.5 | |
 | prep1/events-probability | o | d | x | o | - | 1.5 | |
 | prep1/estimator-properties | o | d | x | o | x | 2.5 | |
-| prep1/distributions | o | d | x | o | x | 2.5 | |
+| **prep1/distributions** | o | o | o | o | o | 0 | ✅Iter.8 |
 | prep1/discrete-distributions | o | x | x | o | - | 2 | |
 | prep1/delta-method | o | d | x | o | x | 2.5 | |
 | prep1/crossval | o | x | x | o | x | 3 | |
@@ -194,3 +194,12 @@
 いずれも node --check OK / KaTeXエラー0 / 内部リンク実在（デッドリンク0）。
 
 **次に深掘りすべきトピック**: `prep1/distributions`（標本分布 t/χ²/F の成立条件・自由度→∞でのt→正規）、`prep1/logistic`（前提=線形性オンロジット・独立、分離時の発散、L5）、`prep1/multiple-regression`（既存L2厚い→L3/L5補強）。
+
+## 2026-07-05 — Iter.8（ここでループを一区切り）
+
+**対象**: `prep1/distributions`（確率分布ギャラリー）
+- L3新規: t/χ²/F は「元データが正規」から導かれる（$(n-1)s^2/\sigma^2\sim\chi^2_{n-1}$ 等）。正規性が崩れると平均系はCLTで緩和されるが分散系（χ²/F）は敏感。独立性＝自由度の意味。
+- L2/L4強化: 極限 $t_k\to N(0,1)$, $\chi^2_k/k\to1$, $F\to1$ を明記し、デモで「自由度↑でtが正規に重なる」確認を明示。
+- 検算: $t$ の分散 $k/(k-2)\to1$ (k→∞)、$E[\chi^2_k/k]=1$。✅
+
+**ループ停止（ユーザー指示）**: 8トピック（regression, testing, confidence, anova1, mle, pca, lda, distributions）を5層化した時点で停止。残る候補と優先順は本ログのマトリクス参照（次点: logistic, multiple-regression, bayes, glm, timeseries）。
