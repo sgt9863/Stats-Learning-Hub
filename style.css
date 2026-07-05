@@ -411,12 +411,14 @@ a { color: var(--accent); }
   padding: 6px 0;
 }
 
+/* コールアウト共通言語: 角丸ボックス＋4px左アクセントバー。
+   情報系(note/keypoints)=スレート、実践系(example)=琥珀。DESIGN_SYSTEM.md 参照 */
 .note {
   background: var(--surface);
   border: 1px solid var(--line);
   border-left: 4px solid var(--accent);
   padding: 13px 18px;
-  border-radius: 0 8px 8px 0;
+  border-radius: var(--radius);
   margin: 1.5em 0;
   font-size: 14px;
 }
@@ -597,6 +599,7 @@ table.simple th {
 .example {
   background: var(--warn-bg);
   border: 1px solid var(--warn-line);
+  border-left: 4px solid var(--warn-bar);
   border-radius: var(--radius);
   padding: 20px 24px 22px;
   margin-top: 2.4em;
@@ -614,8 +617,9 @@ table.simple th {
 .keypoints {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-left: 4px solid var(--accent);
   padding: 18px 26px 20px;
+  border-radius: var(--radius);
   margin-top: 2.4em;
 }
 .keypoints ul { margin: 0; padding-left: 1.3em; }
