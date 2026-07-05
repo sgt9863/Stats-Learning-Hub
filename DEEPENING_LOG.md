@@ -18,7 +18,7 @@
 | prep1/svm | o | d | d | o | x | 2 | |
 | prep1/survival | o | d | d | d | x | 2.5 | |
 | **prep1/sufficiency** | o | o | o | o | o | 0 | ✅Iter.16 |
-| prep1/stochastic-process | o | x | x | o | x | 3 | |
+| **prep1/stochastic-process** | o | o | o | o | o | 0 | ✅Iter.22 |
 | prep1/sampling-survey | o | d | d | o | - | 1 | |
 | prep1/sample-size | o | d | x | o | o | 1.5 | |
 | prep1/roc-auc | o | x | x | o | - | 2 | |
@@ -393,3 +393,24 @@
 - レンダリング: h3×3追加、KaTeXエラー0、内部リンク（multicollinearity, crossval, bayes）実在。verify-topics.js パス（85/85）。✅
 
 **次に深掘りすべきトピック**: `prep1/stochastic-process`（gap 3.0）、`prep1/log-linear`（gap 3.0）、`prep1/fisher-cramer-rao`（gap 3.0）。
+
+## 2026-07-05 — Iter.22
+
+**対象トピック**: `prep1/stochastic-process`（ランダムウォーク・ポアソン過程・ブラウン運動）
+
+**選定理由**: gap 3.0。L1直感とデモ（L4=3過程のサンプルパス）は良好だが、L2は「式の列挙のみ」で〈なぜその式か〉が皆無、L3前提とL5がまるごと欠落。確率過程はマルコフ連鎖・モンテカルロ・ARIMAの土台。
+
+**埋めた層**
+- **L2（新規）**: 3つの導出を追加。①RWの $V[S_n]=n$ は独立ゆえ分散が足せることから＝$\sqrt t$則の正体。②ポアソン過程は微小区間の二項→ポアソン極限で $N(t)\sim\mathrm{Po}(\lambda t)$、無事象確率 $e^{-\lambda s}$ から到着間隔 $\mathrm{Exp}(\lambda)$。③RW→BMは歩幅$\pm\sqrt{\Delta t}$で分散$n\Delta t=t$、CLTで $W_t\sim N(0,t)$＝$\sqrt t$則はCLTの言い換え。
+- **L3（新規）**: 前提表——独立増分（→ARIMA/fBM）／定常・強度一定（→非斉次ポアソン）／まれ独立＝過分散（→Cox・Hawkes・負の二項）／ドリフトなし（→幾何BM）／滑らかさ（→伊藤積分）。
+- **L5（新規）**: 推定と実質的意味。$\hat\lambda=N/T$（MLE）・$V[\hat\lambda]=\lambda/T$＝観測時間で精度が決まる。本質は予測の限界——RW/BMは分散が$t$比例で増え長期予測は青天井（VaRの$\sqrt t$則）。単位根検定→ARIMAへ誘導。
+- **L4（既存デモ活用）**: ±√t帯のデモが追加L2の$\sqrt t$則そのものであることを接続。
+
+**検算結果（python3 モンテカルロ）**
+- RW: $V[S_n]/n=1.0018$（理論1）、$S_n/\sqrt n$の分散1.0018→$N(0,1)$。✅
+- ポアソン: $N(T)$ 平均19.99・分散19.95 ≈ $\lambda T{=}20$（平均=分散）、到着間隔平均0.3998 ≈ $1/\lambda{=}0.4$。✅
+- BM: $V[W_t]=4.983$ ≈ $t{=}5$。✅
+- MLE $\hat\lambda=N/T$: 平均2.5016 ≈ $\lambda$、分散0.31025 ≈ $\lambda/T{=}0.3125$。✅
+- レンダリング: h3×3追加、KaTeXエラー0、内部リンク（distributions, clt, arima, discrete-distributions, mle）実在。verify-topics.js パス（85/85）。✅
+
+**次に深掘りすべきトピック**: `prep1/log-linear`（gap 3.0・L4欠落）、`prep1/fisher-cramer-rao`（gap 3.0）、`prep1/acf-pacf`（gap 3.0）。
