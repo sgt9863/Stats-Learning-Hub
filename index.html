@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>統計学習ハブ | Stats Learning Hub</title>
+<meta name="description" content="統計検定2級の知識から、準1級・実験計画法・機械学習・多変量解析までをインタラクティブなグラフで学べる教材サイト">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="#/"><span class="logo">📊</span> 統計学習ハブ</a>
+  <span class="tagline">統計検定2級 → 準1級・実験計画法・機械学習・多変量解析</span>
+</header>
+<div class="layout">
+  <nav id="sidebar" aria-label="トピック一覧"></nav>
+  <main id="main"></main>
+</div>
+<script src="topics/prep1.js"></script>
+<script src="topics/doe.js"></script>
+<script src="topics/ml.js"></script>
+<script src="topics/mva.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
