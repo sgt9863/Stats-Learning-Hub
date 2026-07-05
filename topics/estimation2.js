@@ -75,13 +75,58 @@
 <p>形式的には「$T=t$ を与えたときのデータの条件付き分布が $\\theta$ に依存しない」こと。判定には<strong>ネイマンの分解定理（因子分解定理）</strong>が便利です。</p>
 <p>$$ f(\\boldsymbol x\\mid\\theta)=g\\big(T(\\boldsymbol x),\\theta\\big)\\cdot h(\\boldsymbol x) $$</p>
 <p>のように「$\\theta$ と $T$ を含む部分」と「データだけの部分」に分解できれば、$T$ は十分統計量です。</p>
-<h3>例</h3>
+<h3>例（分解を実際にやってみる）</h3>
+<p><strong>正規分布（分散既知）</strong>：平方和の分解 $\\sum(x_i-\\mu)^2=\\sum(x_i-\\bar x)^2+n(\\bar x-\\mu)^2$（クロス項が $\\sum(x_i-\\bar x)=0$ で消える）を尤度に代入すると</p>
+<p>$$ f(\\boldsymbol x\\mid\\mu)=\\underbrace{e^{-n(\\bar x-\\mu)^2/2\\sigma^2}}_{g(\\bar x,\\;\\mu)}\\cdot\\underbrace{(2\\pi\\sigma^2)^{-n/2}\\,e^{-\\sum(x_i-\\bar x)^2/2\\sigma^2}}_{h(\\boldsymbol x)\\;(\\mu\\text{を含まない})} $$</p>
+<p>$\\mu$ が絡む因子は $\\bar x$ 経由だけ——だから $\\bar x$ が $\\mu$ の十分統計量です。<strong>尤度が $\\theta$ とデータを「$T$ を通してしか」結びつけない</strong>、というのが分解定理の読み方です。</p>
 <ul>
-<li>正規分布（分散既知）：$\\sum x_i$（同値に標本平均 $\\bar x$）が $\\mu$ の十分統計量。個々の値の順番や散らばりは $\\mu$ の推定に不要。</li>
-<li>ベルヌーイ：成功回数 $\\sum x_i$ が $p$ の十分統計量。</li>
-<li>ポアソン：$\\sum x_i$ が $\\lambda$ の十分統計量。</li>
+<li>ベルヌーイ：$f=p^{\\sum x_i}(1-p)^{n-\\sum x_i}$——そのまま $g(T,p)$ の形（$h=1$）。成功回数 $\\sum x_i$ が十分。</li>
+<li>ポアソン：$f=\\dfrac{\\lambda^{\\sum x_i}e^{-n\\lambda}}{\\prod x_i!}$——$\\sum x_i$ が十分（$\\prod x_i!$ が $h$）。</li>
 </ul>
+<h3>前提条件と、崩れたときの影響</h3>
+<p>十分性は<strong>モデルに対する相対的な概念</strong>です。「$\\bar x$ が十分」は「データが本当に正規分布から来ている」ことを前提にした主張であって、モデルが違えば保証ごと消えます。例えば外れ値が混ざる（裾の重い）分布では、$\\bar x$ は情報を失わないどころか外れ値に引きずられる壊れやすい要約です——モデル内の効率（十分性・<a href="#/prep1/fisher-cramer-rao">クラーメル・ラオ下限</a>の達成）と、モデルを外れたときの頑健性（中央値・トリム平均）は<strong>トレードオフ</strong>の関係にあります。また十分統計量は一意ではなく（$\\sum x_i$ でも $\\bar x$ でも、生データ全体も自明に十分）、実用上は「これ以上縮められない」<strong>最小十分統計量</strong>に意味があります。</p>
+<h3>実務での意味</h3>
+<p>論文や報告書が生データの代わりに $(n,\\ \\bar x,\\ s^2)$ を載せるだけで済むのは、正規モデルなら $(\\bar x,s^2)$ が $(\\mu,\\sigma^2)$ の<strong>結合十分統計量</strong>だから——要約統計量から $t$ 検定も信頼区間もそっくり再構成できます。ただしそれはモデルの中での話で、外れ値・二峰性・打ち切りといった「モデル外の情報」は要約で消えます。<strong>推論は要約から、診断は生データから</strong>、が実務の使い分けです。</p>
 <div class="note">「十分」とは、生データを捨てて $T$ だけ手元に残しても、$\\theta$ については何も損しない、という意味です。最尤推定量は十分統計量の関数になります（<a href="#/prep1/mle">MLE</a> と地続き）。ラオ・ブラックウェルの定理は「推定量を十分統計量で条件付ければ分散が下がる（改善できる）」ことを保証します。</div>`,
+    demo: {
+      note: '青が全データ n 個の尤度曲線、オレンジが「要約だけ」から作った尤度曲線（どちらも最大値1に規格化）。要約に標本平均（十分統計量）を選ぶと2本は完全に一致＝情報の損失ゼロ。「最初の半分」「最初の5個」に落とすと曲線が平らに広がる＝μ の情報を失った証拠です。',
+      controls: [
+        { type: 'select', id: 'summary', label: '要約の仕方', value: 'mean', options: [
+          { value: 'mean', label: '標本平均 x̄（十分統計量）' },
+          { value: 'half', label: '最初の半分だけ使う' },
+          { value: 'five', label: '最初の5個だけ使う' },
+        ]},
+        { type: 'range', id: 'n', label: '標本サイズ n', min: 10, max: 100, step: 5, value: 30 },
+        { type: 'button', id: 'reseed', label: '再サンプル' },
+      ],
+      draw(canvas, p) {
+        const st = S(), Pl = P();
+        const rand = st.rng(31 + (p.reseed | 0) * 17);
+        const n = Math.round(p.n);
+        const xs = [];
+        for (let i = 0; i < n; i++) xs.push(st.randn(rand));
+        // σ=1 既知の正規尤度は L(μ) ∝ exp(-k(x̄_k-μ)²/2)——部分集合 k 個でも同じ形
+        const likeOf = data => {
+          const k = data.length, m = st.mean(data);
+          return mu => Math.exp(-k * (m - mu) * (m - mu) / 2);
+        };
+        const Lfull = likeOf(xs);
+        const sub = p.summary === 'mean' ? xs : p.summary === 'half' ? xs.slice(0, Math.max(2, Math.floor(n / 2))) : xs.slice(0, 5);
+        const Lsub = likeOf(sub);
+        const grid = st.linspace(-1.6, 1.6, 240);
+        const pl = Pl.make(canvas, { xmin: -1.6, xmax: 1.6, ymin: 0, ymax: 1.12 });
+        pl.clear(); pl.axes({ xLabel: '母平均 μ の候補', yLabel: '規格化尤度' });
+        pl.line(grid.map(mu => [mu, Lfull(mu)]), { color: Pl.colors[0], width: 2.5 });
+        pl.line(grid.map(mu => [mu, Lsub(mu)]), { color: Pl.colors[1], width: 2, dash: [5, 4] });
+        pl.vline(0, { color: Pl.gray, dash: [3, 3], label: '真の μ=0' });
+        const match = p.summary === 'mean';
+        pl.legend([
+          { label: '全データ (n=' + n + ')', color: Pl.colors[0] },
+          { label: '要約から (' + (match ? 'x̄ と n' : sub.length + '個') + ')', color: Pl.colors[1] },
+        ]);
+        pl.text(-1.6, 1.12, match ? '2本が一致 → 情報の損失ゼロ（十分）' : '幅が広がる → 情報を損失（不十分な要約）', { align: 'left', baseline: 'top', dx: 56, dy: 4, color: match ? '#0f766e' : '#c2410c', size: 12.5 });
+      },
+    },
   });
 
   /* --- フィッシャー情報量とクラーメル・ラオの下限 --- */
