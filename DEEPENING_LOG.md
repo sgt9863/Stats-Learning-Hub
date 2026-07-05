@@ -47,7 +47,7 @@
 | **prep1/mle** | o | o | o | o | o | 0 | ✅Iter.5 |
 | prep1/missing-data | o | x | d | o | x | 2.5 | |
 | prep1/mgf | o | o | x | o | - | 1 | |
-| prep1/mds-ca | x | x | x | d | x | 4.5 | |
+| **prep1/mds-ca** | o | o | o | o | o | 0 | ✅Iter.15 |
 | prep1/mcmc | d | x | x | d | - | 3 | |
 | prep1/markov-chain | o | d | x | d | - | 2 | |
 | **prep1/logistic** | o | o | o | o | o | 0 | ✅Iter.9 |
@@ -258,3 +258,22 @@
 - レンダリング: h3×2、KaTeXエラー0、内部リンク（fisher-cramer-rao, logistic）実在。デッドリンク0。
 
 **次に深掘りすべきトピック**: `prep1/mds-ca`（最大gap 4.5、L1直感から欠落）、`prep1/sufficiency`（推定論の土台）、`prep1/bootstrap`（計算統計の入口・L5含む）。
+
+## 2026-07-06 — Iter.15
+
+**対象トピック**: `prep1/mds-ca`（多次元尺度法・対応分析・正準相関）
+
+**選定理由**: マトリクス最大gap（4.5）。L1直感（3手法の使い分け）から欠けており、多変量セクションの「PCA以外」の見取り図として先に固める価値が高い。
+
+**埋めた層**
+- **L1（新規）**: 「データの形で手法を選ぶ」導入——生の変数行列→PCA／距離だけ→MDS／分割表→CA／変数2群→CCA。目的は同じで入力が違うだけ、という整理。
+- **L2（新規）**: MDSの核心恒等式 $d_{ij}^2=\|\boldsymbol x_i\|^2+\|\boldsymbol x_j\|^2-2\boldsymbol x_i^\top\boldsymbol x_j$ →二重中心化で $B=-\frac12JD^2J=XX^\top$（グラム行列）→固有分解×$\sqrt\lambda$ で座標。回転・鏡像不定の原理（内積の回転不変性）。CA＝独立期待値からの乖離 $(p_{ij}-r_ic_j)/\sqrt{r_ic_j}$ のSVD（総慣性$=\chi^2/n$）、CCA＝相関最大 vs PLS＝共分散最大 vs 回帰＝予測、の三つ巴対比。
+- **L3（新規）**: 前提表——計量MDSはユークリッド距離（破れると負固有値→非計量MDS）、CAは疎セル・希少カテゴリで不安定、CCAは $n>$ 変数総数（小標本で正準相関→1の過学習、正則化CCA）。3手法とも探索的で検定の枠組みではない。
+- **L5（新規）**: 寄与率を見ずに布置図の近さを読まない。CAの行点×列点間距離は直接解釈不可（有名な注意点）。CCAの高相関は過学習の可能性→交差検証。
+- **L4（強化）**: note に「真の配置が2次元だから固有値上位2つで完全復元（回転・鏡像を除く）。3次元以上なら歪み＝残りの固有値」を明記し、デモと式 $B=-\frac12JD^2J$ を直結。
+
+**検算結果**
+- 二重中心化恒等式: 3点 (0,0),(3,0),(0,4) で $B$ と中心化座標のグラム行列を数値比較、max誤差 1.8e-15。✅
+- レンダリング: h3×5、KaTeXエラー0、内部リンク（pca, eigen, contingency, pls, multicollinearity）実在。デモ draw() 実行で例外なし。✅
+
+**次に深掘りすべきトピック**: `prep1/sufficiency`（十分統計量、gap 3.5・推定論の土台）、`prep1/bootstrap`（gap 3.5）、`prep1/moment-method`（gap 3.5）。
