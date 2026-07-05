@@ -178,7 +178,53 @@
 <p>理論では $E[X]=k\\theta,\\ V[X]=k\\theta^2$。標本平均 $\\bar x$ と標本分散 $s^2$ と等しいと置くと、</p>
 <p>$$ \\hat\\theta=\\frac{s^2}{\\bar x},\\qquad \\hat k=\\frac{\\bar x^2}{s^2} $$</p>
 <p>と、連立を解くだけで推定量が求まります。</p>
+<p><strong>なぜこれで正当化されるか</strong>：標本モーメント $\\frac1n\\sum x_i^r$ は<a href="#/prep1/lln">大数の法則</a>で理論モーメント $E[X^r]$ に収束します。連立方程式の解がパラメータの連続関数なら、収束はそのまま解に引き継がれる（連続写像定理）——つまり<strong>モーメント法の推定量は一致推定量</strong>です。保証されるのはそこまでで、不偏性や有効性は保証されません。</p>
+<h3>前提条件と、崩れたときの影響</h3>
+<table class="simple">
+<tr><th>前提</th><th>崩れると起きること</th><th>対処・代替</th></tr>
+<tr><td>使うモーメントが存在する</td><td>コーシー分布のように平均が存在しないと、そもそも式が立てられない</td><td>分位点ベースの推定・<a href="#/prep1/mle">最尤法</a></td></tr>
+<tr><td>解が定義域に収まる</td><td>$\\hat k<0$ や負の分散推定など、実現不可能な値が出ることがある</td><td>境界に切り詰める・最尤法へ切り替え</td></tr>
+<tr><td>効率（分散）は問わない</td><td>同じデータでも最尤推定より分散が大きいことがある（情報をモーメントに圧縮した分の損）</td><td>MoM を初期値にして最尤法で仕上げる、が実務の定石</td></tr>
+<tr><td>どのモーメントを使うか</td><td>選ぶモーメントの組で推定量が変わる（非一意）</td><td>低次モーメント優先（高次は外れ値に激しく敏感）</td></tr>
+</table>
+<p>使い分けの整理：<strong>最尤法</strong>は分布の完全な指定と引き換えに漸近有効、<strong>モーメント法</strong>は「式が解ければ即使える」簡便さ、<strong>最小二乗法</strong>は平均構造だけを仮定する回帰の標準——仮定の強さと効率のトレードオフです。</p>
+<h3>有意性と実質的な意味</h3>
+<p>モーメント法の点推定は<strong>小標本で偏り得ます</strong>。下のデモのガンマ分布では、$n=15$ で $\\hat k$ の平均は約 2.4（真値 2）と<strong>2割以上の上方バイアス</strong>が出ます（$n=200$ でほぼ解消——一致性はあるが不偏ではない、の実物）。点推定だけを報告せず、標準誤差（デルタ法や<a href="#/prep1/bootstrap">ブートストラップ</a>）を添えるのが作法です。</p>
 <div class="note"><strong>長所</strong>：計算が簡単で、尤度が複雑でも使える。最尤推定の初期値によく使う。<br><strong>短所</strong>：一般に最尤法より効率が悪い（分散が大きい）ことがあり、パラメータが定義域外（例：負の分散）になることもある。準1級では「最尤法・モーメント法・最小二乗法」の使い分けが問われます。</div>`,
+    demo: {
+      note: 'ガンマ分布のデータからモーメント法で k̂=x̄²/s² を繰り返し推定した分布。n が小さいと山が真値（点線）より右にずれる＝上方バイアス。n を増やすと山が真値に寄って細くなる＝一致性。バイアスがあっても一致推定量、を1枚で確認できます。',
+      controls: [
+        { type: 'range', id: 'k', label: '真の形状 k', min: 1, max: 6, step: 1, value: 2 },
+        { type: 'range', id: 'n', label: '標本サイズ n', min: 10, max: 200, step: 10, value: 20 },
+        { type: 'button', id: 'reseed', label: '再サンプル' },
+      ],
+      draw(canvas, p) {
+        const st = S(), Pl = P();
+        const rand = st.rng(910 + (p.reseed | 0) * 37);
+        const kTrue = Math.round(p.k), n = Math.round(p.n), theta = 1;
+        // 整数kのガンマ＝指数乱数k個の和（アーラン）
+        const gammaRv = () => { let s = 0; for (let j = 0; j < kTrue; j++) s += -theta * Math.log(1 - rand()); return s; };
+        const R = 2000, khats = [];
+        for (let r = 0; r < R; r++) {
+          const xs = [];
+          for (let i = 0; i < n; i++) xs.push(gammaRv());
+          const m = st.mean(xs);
+          let ss = 0; for (const x of xs) ss += (x - m) * (x - m);
+          const s2 = ss / (n - 1);
+          if (s2 > 1e-9) khats.push(m * m / s2);
+        }
+        const lo = 0, hi = kTrue * 3;
+        const bins = st.histogram(khats.filter(v => v <= hi), 44, lo, hi);
+        const ymax = Math.max.apply(null, bins.map(b => b.density)) * 1.15 || 1;
+        const pl = Pl.make(canvas, { xmin: lo, xmax: hi, ymin: 0, ymax });
+        pl.clear(); pl.axes({ xLabel: 'k̂ = x̄²/s² の推定値', yLabel: '密度' });
+        pl.bars(bins.map(b => ({ x0: b.x0, x1: b.x1, y: b.density })), { color: Pl.colors[0], alpha: 0.6 });
+        pl.vline(kTrue, { color: Pl.ink, dash: [6, 3], label: '真値 k=' + kTrue });
+        const mk = st.mean(khats);
+        pl.vline(mk, { color: Pl.colors[1], label: '平均 ' + mk.toFixed(2) });
+        pl.text(hi, ymax, 'バイアス ' + (mk - kTrue >= 0 ? '+' : '') + (mk - kTrue).toFixed(2), { align: 'right', baseline: 'top', dx: -8, dy: 4, color: Pl.colors[1], size: 12.5 });
+      },
+    },
   });
 
   /* --- ガウス・マルコフの定理 --- */
