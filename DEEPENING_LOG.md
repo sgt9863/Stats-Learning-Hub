@@ -22,7 +22,7 @@
 | prep1/sampling-survey | o | d | d | o | - | 1 | |
 | prep1/sample-size | o | d | x | o | o | 1.5 | |
 | prep1/roc-auc | o | x | x | o | - | 2 | |
-| prep1/regularization | o | d | x | d | x | 3 | |
+| **prep1/regularization** | o | o | o | o | o | 0 | ✅Iter.21 |
 | prep1/regression-diagnostics | o | x | o | o | x | 2 | |
 | prep1/random-variables | o | x | x | o | - | 2 | |
 | prep1/principles | d | x | x | o | o | 2.5 | |
@@ -372,3 +372,24 @@
 - レンダリング: h3×3追加（潜在成分/前提条件/有意性）、KaTeXエラー0、内部リンク（pls, lda, crossval, opls-da）実在。verify-topics.js パス（85/85）。✅
 
 **次に深掘りすべきトピック**: `prep1/regularization`（gap 3.0・回帰系の残り）、`prep1/stochastic-process`（gap 3.0）、`prep1/log-linear`（gap 3.0）。
+
+## 2026-07-05 — Iter.21
+
+**対象トピック**: `prep1/regularization`（正則化・リッジ回帰・Lasso）
+
+**選定理由**: gap 3.0・回帰系の残り。L1直感とデモ（L4=直交近似の係数パス）はあったが、L2が「式の提示のみ」で〈なぜ縮むのか／なぜLassoだけ0になるのか〉が未説明、L3前提とL5がまるごと欠落。回帰の下流（overfitting/multicollinearity/model-selection）の締めに当たる。
+
+**埋めた層**
+- **L2（強化）**: リッジ閉形式 $\hat\beta=(X^\top X+\lambda I)^{-1}X^\top y$ を導出し、$\lambda I$ が特異な $X^\top X$（共線性・$p>n$）を正則化する＝共線性に強い理由を明示。直交ケースで リッジ$=\hat\beta_{LS}/(1+\lambda/n)$（比例縮小・0にならない）、Lasso$=$軟しきい値（一定量引いて0で止める＝スパース化）。L1ダイヤの角 vs L2の円、の幾何的説明も追加。
+- **L3（新規）**: 前提表——標準化必須（罰則のスケール依存）／$\lambda$はCV／Lassoは相関変数群から1本を気まぐれ選択で不安定（→Elastic Net）／$p>n$では最大$n$個しか選べない／リッジは変数を落とさない。
+- **L5（新規）**: 縮小係数は不偏でない＝効果量として過小。Lasso選択後の通常t検定は誤り（選択後推論）。正則化は予測・スクリーニングの道具で有意性検定の代替ではない。ベイズ事前（リッジ=正規、Lasso=ラプラス）解釈も付記。
+- **L4（既存デモ活用）**: 直交近似の係数パスデモの縮小則が、追加したL2の直交ケース公式そのものであることを本文と接続。
+
+**検算結果（python3 独立実装）**
+- 直交計画（$X^\top X=nI$）でリッジ閉形式 $=\hat\beta_{LS}/(1+\lambda/n)$: 両者一致（例 [1.2498,-0.8998,0.5997,...]）。✅
+- Lasso座標降下 = 軟しきい値 $\mathrm{sign}\cdot\max(0,|\hat\beta_{LS}|-\lambda/2n)$: 一致（3.0→2.75, -1.0→-0.75, 微小係数→0）。✅
+- 共線性の安定化: 条件数 $\mathrm{cond}(X^\top X)\approx3.9\times10^6 \to \mathrm{cond}(X^\top X+0.5I)\approx180$。✅
+- バイアス・分散: $\beta$ のMSEを$\lambda$走査で 2.12($\lambda{=}0$)→0.80($\lambda{=}20$)→0.94($\lambda{=}50$)、最小は $\lambda>0$。✅
+- レンダリング: h3×3追加、KaTeXエラー0、内部リンク（multicollinearity, crossval, bayes）実在。verify-topics.js パス（85/85）。✅
+
+**次に深掘りすべきトピック**: `prep1/stochastic-process`（gap 3.0）、`prep1/log-linear`（gap 3.0）、`prep1/fisher-cramer-rao`（gap 3.0）。
