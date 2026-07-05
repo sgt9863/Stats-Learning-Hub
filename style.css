@@ -25,6 +25,8 @@
   --warn-line: #eadfb8;
   --warn-bar: #d4a017;
   --radius: 12px;
+  /* 本文の読み幅（measure）: 全角約42字。プロースだけに適用し、図表・デモは全幅。 */
+  --measure: 42em;
   --font: "Inter", "Noto Sans JP", "Hiragino Sans", "Yu Gothic UI", system-ui, -apple-system, sans-serif;
 }
 
@@ -369,6 +371,17 @@ a { color: var(--accent); }
   margin: 0 0 20px;
   border-bottom: 2px solid var(--ink);
   padding-bottom: 18px;
+}
+
+/* 本文プロースの読み幅を制御（1行の字数を抑えて可読性を上げる）。
+   図表・デモ・数式ブロックは読み幅に縛らず全幅のまま＝グラフが主役。 */
+.lead,
+.body > p,
+.body > ul,
+.body > ol,
+.body > h3,
+.body > .note {
+  max-width: var(--measure);
 }
 
 .body h3 {
