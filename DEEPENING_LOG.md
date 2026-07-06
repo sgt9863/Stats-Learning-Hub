@@ -87,10 +87,10 @@
 | **math/gradient** | o | o | o | o | - | 0 | ✅Iter.48 |
 | **math/eigen** | o | o | o | o | - | 0 | ✅Iter.50 |
 | **math/covariance-matrix** | o | o | o | o | - | 0 | ✅Iter.47 |
-| doe/rsm-error | o | d | d | d | x | 2.5 | |
-| doe/rsm | o | o | x | d | x | 2.5 | |
+| **doe/rsm-error** | o | o | o | o | o | 0 | ✅Iter.81 |
+| **doe/rsm** | o | o | o | o | o | 0 | ✅Iter.79 |
 | doe/robust | o | x | o | d | - | 1.5 | |
-| doe/d-optimal | o | d | d | o | x | 2 | |
+| **doe/d-optimal** | o | o | o | o | o | 0 | ✅Iter.80 |
 | **doe/ccd** | o | o | o | o | o | 0 | ✅Iter.29 |
 | **chemo/pls-da** | o | o | o | o | o | 0 | ✅Iter.20 |
 | **chemo/pls** | o | o | o | o | o | 0 | ✅Iter.28 |
@@ -861,3 +861,14 @@ KaTeXエラー0・div balance OK・内部リンク（pca, path-analysis, multipl
 
 **残り約8**: blocking-designs(advanced2.js), interaction, principles, rsm, rsm-error, d-optimal, robust(doe.js), opls-da(chemo.js)。
 **次**: DoEクラスタ `doe/rsm`(2.5)・`doe/rsm-error`(2.5)・`doe/d-optimal`(2)。※着手前にクラウド進捗を再確認。
+
+## 2026-07-06 — Iter.79-81（DoE: RSM・D最適・誤差伝搬）
+
+**Iter.79 `doe/rsm`** — L3: 2次は局所近似、停留点の種類(ヘッセ固有値・鞍点)、領域外外挿禁止・逐次探索、ロット・オブ・フィット。L5: 停留点にも不確かさ→デザインスペース・確認実験・望ましさ関数。
+**Iter.80 `doe/d-optimal`** — L2: 信頼楕円体積∝1/√det(XᵀX)、A/G/I最適。L3: モデル依存(仮定違いで最悪)、端点集中でロット検出不能→中心点追加、局所最適。
+**Iter.81 `doe/rsm-error`** — L3: デルタ法(速い1次近似・非線形で外れる)vs MC(重いが柔軟)、σ²推定の正しさ、モデル誤り・外挿は含まない。
+
+KaTeXエラー0・div balance OK・内部リンク（rsm-error, robust, multivariate-normal, delta-method, ccd）実在。verify-topics.js 86/86 PASS。
+
+**残り約5**: blocking-designs(advanced2.js), interaction, principles, robust(doe.js), opls-da(chemo.js)。
+**次（ラスト）**: `doe/robust`(1.5)・`prep1/principles`(2.5)・`prep1/interaction`(1.5)・`prep1/blocking-designs`(2.5)・`chemo/opls-da`(2.5)。※着手前にクラウド進捗を再確認。
