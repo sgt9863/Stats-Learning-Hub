@@ -84,7 +84,7 @@
 <p>$$ E\\big[(y-\\hat f)^2\\big]=\\underbrace{(f-E[\\hat f])^2}_{\\text{バイアス}^2}+\\underbrace{E[(\\hat f-E[\\hat f])^2]}_{\\text{バリアンス}}+\\underbrace{\\sigma^2}_{\\text{ノイズ}} $$</p>
 <p>という<a href="#/prep1/estimator-properties">MSE分解</a>の予測版が出ます。<strong>バイアスは「モデルの平均が真値からどれだけずれるか（表現力不足）」、バリアンスは「データを引き直すと予測がどれだけ暴れるか（過敏さ）」、ノイズは減らせない下限</strong>。モデルを複雑にするとバイアスは減るがバリアンスが増える——両者の和が最小になる複雑さが最適で、<strong>バイアスとバリアンスはトレードオフ</strong>です。<a href="#/prep1/regularization">正則化</a>は「少しバイアスを足してバリアンスを大きく削る」操作だと読めます。</p>
 <h3>前提と、実質的な注意</h3>
-<p>「訓練誤差が小さい＝良いモデル」は誤りで、複雑にすれば訓練誤差はいくらでも下げられます（訓練データを丸暗記）。評価すべきは<strong>汎化誤差</strong>で、そのために<a href="#/prep1/crossval">交差検証</a>やホールドアウトで「学習に使っていないデータ」の誤差を測ります。前提として、訓練データとテストデータが<strong>同じ分布から来ている</strong>ことが要ります——これが崩れる（分布シフト・時間的ドリフト・標本の偏り）と、交差検証で良くても本番で外します。またデータ数 $n$ が増えるとバリアンスは下がるので、<strong>「複雑なモデルが過学習するか」はモデルの複雑さと $n$ の比で決まる</strong>点も重要です（$n$ が十分なら高次でも過学習しにくい）。近年の「二重降下」など、古典的なU字が単純に当てはまらない現象もありますが、まずはこのトレードオフを基準に考えます。</p>
+<p>「訓練誤差が小さい＝良いモデル」は誤りで、複雑にすれば訓練誤差はいくらでも下げられます（訓練データを丸暗記）。評価すべきは<strong>汎化誤差</strong>で、そのために<a href="#/prep1/crossval">交差検証</a>やホールドアウトで「学習に使っていないデータ」の誤差を測ります。過学習の大きさは、訓練当てはめの $R^2$ と交差検証の予測力 $Q^2$ の<strong>ギャップ $R^2-Q^2$</strong> として一目で測れます（<a href="#/prep1/crossval">Q²</a>）。前提として、訓練データとテストデータが<strong>同じ分布から来ている</strong>ことが要ります——これが崩れる（分布シフト・時間的ドリフト・標本の偏り）と、交差検証で良くても本番で外します。またデータ数 $n$ が増えるとバリアンスは下がるので、<strong>「複雑なモデルが過学習するか」はモデルの複雑さと $n$ の比で決まる</strong>点も重要です（$n$ が十分なら高次でも過学習しにくい）。近年の「二重降下」など、古典的なU字が単純に当てはまらない現象もありますが、まずはこのトレードオフを基準に考えます。</p>
 <div class="note">下で多項式の次数を上げると、曲線が全ての訓練点（青）を通ろうとしてグニャグニャに暴れ、点のない場所で大きく外れます。真の関数（灰の点線）から離れていく様子が過学習です。データ数を増やすと同じ次数でも暴れが収まる（バリアンス減）ことも確かめ、ちょうど良い次数を探してください。</div>`,
     demo: {
       note: '次数を上げると訓練点にはよく合いますが、点の間で激しく振動し真の曲線（点線）から乖離します。「訓練誤差は下がるが汎化は悪化」を体感できます。',
@@ -269,6 +269,13 @@
 <p>ここで $\\hat f_{-\\kappa(i)}$ は<strong>$i$ を含む分割を除いて学習したモデル</strong>。各点を「その点を見ていないモデル」で予測するので、訓練誤差のような楽観バイアスがなく、テスト誤差のほぼ不偏な見積もりになります（数値実験でも 5 分割CVは真のテスト誤差をよく追い、両者とも真の次数で最小になりました）。$k=n$ とすると<strong>一つ抜き交差検証（LOOCV）</strong>です。</p>
 <p><strong>$k$ の選び方はバイアスと分散・計算量のトレードオフ</strong>です。$k$ が小さい（例：2分割）と各モデルが半分のデータしか使えず、性能を<strong>悲観的に過小評価</strong>します（実験で $k{=}2$ の誤差 0.42 vs LOOCV 0.38）。$k=n$ のLOOCVはほぼ不偏ですが $n$ 回学習して重く、分割ごとの推定が強く相関します。実務では<strong>$k=5$ か $10$</strong> が妥協点の定番です。データ分割を要さない解析的な近似として<a href="#/prep1/model-selection">AIC・BIC</a>もあります。</p>
 
+<h3>Q²（予測的決定係数）とR²ギャップ</h3>
+<p>交差検証の誤差を、なじみのある<strong>決定係数の形</strong>に直したのが $Q^2$ です。各点を「その点を除いて学習したモデル」で予測した残差の二乗和を<strong>PRESS</strong>（予測残差平方和）とし、全変動 $\\mathrm{TSS}=\\sum_i(y_i-\\bar y)^2$ で割ります。</p>
+<p>$$ \\mathrm{PRESS}=\\sum_{i=1}^{n}\\bigl(y_i-\\hat y_{-i}\\bigr)^2,\\qquad Q^2=1-\\frac{\\mathrm{PRESS}}{\\mathrm{TSS}} $$</p>
+<p>$R^2=1-\\mathrm{RSS}/\\mathrm{TSS}$ が<strong>訓練データへの当てはめ</strong>（$\\hat y_i$ は自分自身も使って学習）なのに対し、$Q^2$ は<strong>未知データの予測力</strong>（$\\hat y_{-i}$ は自分を見ていない）。だから性格が正反対です——$R^2$ は変数や次数を増やすほど<strong>必ず単調に上がる</strong>のに、$Q^2$ は複雑にしすぎると<strong>下がり、負にもなり得ます</strong>（$Q^2<0$ は「平均 $\\bar y$ で予測するより悪い」）。定義上つねに $Q^2\\le R^2$ で、<strong>この $R^2-Q^2$ のギャップが過学習の大きさ</strong>を測ります。</p>
+<p>数値実験（$n{=}40$、真は3次多項式、$\\sigma{=}2$）で多項式次数を上げると、$R^2$ は $0.64\\,(1次)\\to0.80\\,(3次)\\to0.87\\,(10次)$ と単調に増え続けますが、$Q^2$ は真の次数付近（2〜4次）の $0.75$ 前後でピークを打ち、$10$ 次では $0.22$ まで崩落——ギャップは $0.04\\to0.65$ に開きます。「$R^2$ が高い＝良いモデル」ではなく「$Q^2$ で汎化を確かめ、$R^2-Q^2$ で過学習を疑う」が鉄則です。<a href="#/prep1/overfitting">過学習</a>のバイアス・バリアンス分解を、1つの指標に凝縮したのが $Q^2$ だと言えます。</p>
+<p>この $Q^2$ は<a href="#/chemo/pls">PLS回帰</a>や<a href="#/chemo/pls-da">PLS-DA</a>など、変数がサンプルより多いケモメトリクスで成分数を選ぶ中心指標です（$\\sqrt{\\mathrm{PRESS}/n}$ が RMSECV、独立試料での同種指標が RMSEP）。分類では $Q^2$ の代わりに交差検証の正解率・AUC を使い、判別性能で最終判断します。反復測定があってモデルの「形」を検定したいなら、姉妹の道具が<a href="#/prep1/lack-of-fit">適合度の欠如（lack-of-fit）</a>です。</p>
+
 <h3>前提条件と、崩れたときの影響</h3>
 <table class="simple">
 <tr><th>前提</th><th>崩れると起きること</th><th>対処・代替</th></tr>
@@ -342,6 +349,14 @@
         cvErrs.forEach((e, i) => { if (isFinite(e) && e < bestErr) { bestErr = e; bestDeg = i + 1; } });
         pl.vline(bestDeg, { color: Pl.colors[2], label: '最適次数 ' + bestDeg });
         pl.legend([{ label: '訓練誤差', color: Pl.colors[0] }, { label: '交差検証誤差', color: Pl.colors[1] }]);
+        // R²（訓練）と Q²（交差検証）を最適次数と最大次数で対比：ギャップ＝過学習
+        const ybar = st.mean(ys); let tss = 0; for (let i = 0; i < n; i++) tss += (ys[i] - ybar) ** 2;
+        const r2 = d => 1 - trainErrs[d - 1] * n / (tss || 1e-9);
+        const q2 = d => 1 - cvErrs[d - 1] * n / (tss || 1e-9);
+        const dHi = maxDeg;
+        pl.text(0.5, ymax, 'R²・Q²（最適' + bestDeg + '次 / 最大' + dHi + '次）', { align: 'left', baseline: 'top', dx: 54, dy: 2, color: '#475467', size: 11.5 });
+        pl.text(0.5, ymax, 'R²(訓練)=' + r2(bestDeg).toFixed(2) + ' / ' + r2(dHi).toFixed(2) + '（単調増）', { align: 'left', baseline: 'top', dx: 54, dy: 20, color: Pl.colors[0], size: 11.5 });
+        pl.text(0.5, ymax, 'Q²(CV)=' + q2(bestDeg).toFixed(2) + ' / ' + q2(dHi).toFixed(2) + '（過学習で低下）', { align: 'left', baseline: 'top', dx: 54, dy: 38, color: Pl.colors[1], size: 11.5 });
       },
     },
   });
@@ -432,6 +447,205 @@
         pl.text(xmin, ymax, '単純比較（点線の差）= ' + naive.toFixed(2), { align: 'left', baseline: 'top', dx: 56, dy: 4, color: '#475467', size: 12.5 });
         pl.text(xmin, ymax, '調整後 τ̂（直線の間隔）= ' + tauHat.toFixed(2) + '（真値 ' + tau.toFixed(1) + '）', { align: 'left', baseline: 'top', dx: 56, dy: 24, color: Pl.colors[2], size: 12.5 });
         pl.legend([{ label: '処置群 T=1', color: Pl.colors[0] }, { label: '対照群 T=0', color: Pl.colors[1] }]);
+      },
+    },
+  });
+
+  /* --- 適合度の欠如（ロット・オブ・フィットと純粋誤差） --- */
+  T.push({
+    section: 'prep1', group: '回帰分析', id: 'lack-of-fit', title: '適合度の欠如（純粋誤差とロット・オブ・フィット）',
+    summary: '決定係数が高くても「モデルの形」が間違っていることがあります。反復測定を「ものさし」にして、形の不適合を純粋誤差と切り分けて検定します。',
+    body: `
+<p>回帰で決定係数 $R^2$ が高くても、モデルの<strong>形</strong>が間違っていることはよくあります。放物線のように曲がったデータに直線を当てると、各点は「たまたま近い」だけで、体系的なズレ（曲率）が残ります。<strong>適合度の欠如（ロット・オブ・フィット, lack-of-fit）検定</strong>は、この「モデルの形が悪いことによるズレ」を「測定そのもののばらつき」と切り分けて検出する道具です。</p>
+<p>鍵になるのが<strong>反復測定</strong>です。同じ $x$ で複数回 $y$ を測ると、その内部のばらつきは<em>モデルが何であろうと関係のない、純粋な測定の再現性</em>です。これを「ものさし」にして、モデル予測が各 $x$ のグループ平均からどれだけ外れているかを測ります。<a href="#/prep1/model-selection">モデル選択</a>が「どの変数が良いか」を問うのに対し、lack-of-fit は「そもそも直線という形でよいのか」を問います。</p>
+<h3>残差平方和を「純粋誤差」と「適合度の欠如」に分ける</h3>
+<p>相異なる $x$ 水準が $c$ 個、水準 $j$ で $n_j$ 回反復、全体で $n=\\sum_j n_j$ 観測、パラメータ数を $p$ とします。$y_{ji}$ を水準 $j$ の $i$ 番目、$\\bar y_j$ をその水準のグループ平均、$\\hat y_j$ をモデル予測として、残差を2つに割ります。</p>
+<p>$$ y_{ji}-\\hat y_j=\\underbrace{(y_{ji}-\\bar y_j)}_{\\text{測定のばらつき}}+\\underbrace{(\\bar y_j-\\hat y_j)}_{\\text{平均とモデルのズレ}} $$</p>
+<p>両辺を二乗して全点で和をとると、交差項 $2\\sum_j(\\bar y_j-\\hat y_j)\\sum_i(y_{ji}-\\bar y_j)$ は、内側の $\\bar y_j-\\hat y_j$ が $i$ に依らない定数なので括り出せ、残る $\\sum_i(y_{ji}-\\bar y_j)=0$（グループ内偏差の和はゼロ）で消えます。こうして平方和がきれいに分かれます。</p>
+<p>$$ \\underbrace{\\sum_j\\sum_i(y_{ji}-\\hat y_j)^2}_{SS_E}=\\underbrace{\\sum_j\\sum_i(y_{ji}-\\bar y_j)^2}_{SS_{PE}\\,(\\text{純粋誤差})}+\\underbrace{\\sum_j n_j(\\bar y_j-\\hat y_j)^2}_{SS_{LOF}\\,(\\text{適合度の欠如})} $$</p>
+<p><strong>なぜこの分解が効くか</strong>：$SS_{PE}$ は各 $x$ の内部だけを見るので<strong>モデルの形に一切依存しません</strong>。誤差分散 $\\sigma^2$ の不偏推定 $MS_{PE}=SS_{PE}/(n-c)$ を与える「純度の高いものさし」です。一方 $SS_{LOF}$ はグループ平均とモデル予測のズレなので、モデルの形が正しければ誤差だけ、間違っていれば<strong>系統的なズレが上乗せ</strong>されて膨らみます。それぞれ平均平方にして比をとると検定統計量です。</p>
+<p>$$ F=\\frac{SS_{LOF}/(c-p)}{SS_{PE}/(n-c)}=\\frac{MS_{LOF}}{MS_{PE}}\\ \\sim\\ F(c-p,\\ n-c)\\quad(H_0:\\text{モデルの形は正しい}) $$</p>
+<p>$df_{LOF}=c-p$ が正であるには<strong>水準数 $c$ がパラメータ数 $p$ より多い</strong>必要があります（直線 $p=2$ なら $c\\ge3$）。</p>
+<h3>数値例：曲がったデータに直線を当てる</h3>
+<p>$x=1,\\dots,5$ の5水準・各3回反復（$n=15,\\ c=5$）で、真の平均が下に凸の放物線になるデータに<strong>直線</strong>（$p=2$）を当てます。</p>
+<table class="simple">
+<tr><th></th><th>$SS$</th><th>自由度</th><th>$MS$</th></tr>
+<tr><td>適合度の欠如 LOF</td><td>$48.98$</td><td>$c-p=3$</td><td>$16.33$</td></tr>
+<tr><td>純粋誤差 PE</td><td>$1.81$</td><td>$n-c=10$</td><td>$0.181$</td></tr>
+<tr><td>残差 E（合計）</td><td>$50.80$</td><td>$n-p=13$</td><td></td></tr>
+</table>
+<p>$F=16.33/0.181=90.0$、$p=1.5\\times10^{-7}$（棄却限界 $F_{0.05}(3,10)=3.71$ を大きく超える）。<strong>直線モデルの適合度の欠如は極めて有意</strong>です。注目すべきは、この直線の $R^2=0.001$（ほぼ0）だという点——放物線が左右対称で直線の傾きがほぼ0になるため、$R^2$ を見ただけでは「$x$ は無関係」と誤読しかねません。しかし lack-of-fit は「無関係」ではなく「<strong>直線という形が違う</strong>」と正しく告げます。同じデータに $x^2$ を足した<strong>2次モデル</strong>（$p=3$）を当てると $SS_{LOF}=0.30$、$F=0.84$、$p=0.46$ で欠如は消え、$R^2=0.958$ に跳ね上がります。純粋誤差 $SS_{PE}=1.81$ は<strong>モデルを変えても不変</strong>——「ものさし」が動かない実演です。</p>
+<h3>前提条件と、崩れたときの影響</h3>
+<table class="simple">
+<tr><th>前提</th><th>崩れると起きること</th><th>対処・代替</th></tr>
+<tr><td>真の反復がある（同一 $x$ で複数観測）</td><td>$SS_{PE}$ が測れず検定不能。近接点を反復と誤ると純粋誤差を過大評価し $F$ が過小に</td><td>中心点の反復を計画に入れる（<a href="#/doe/ccd">CCD</a>・<a href="#/doe/rsm">応答曲面</a>）</td></tr>
+<tr><td>誤差の等分散性</td><td>$MS_{PE}$ が水準ごと分散の平均になり $F$ 分布が歪む</td><td>加重最小二乗・分散安定化変換</td></tr>
+<tr><td>誤差の独立・正規性</td><td>$F$ 比が理論分布に従わず $p$ 値が不正確</td><td>系列相関の診断（<a href="#/prep1/regression-diagnostics">回帰診断</a>）・ブートストラップ</td></tr>
+<tr><td>水準数 $c>p$</td><td>$df_{LOF}=c-p\\le0$ で検定が定義できない（飽和モデル）</td><td>説明変数の水準を増やす</td></tr>
+</table>
+<p>要点は「<strong>反復がなければ純粋誤差は存在しない</strong>」こと。反復のない観測データではこの検定は原理的にできず、代わりに<a href="#/prep1/regression-diagnostics">残差プロットの曲がり</a>で形の不適合を目で見つけます。両者は補完関係——残差プロットは形の<em>種類</em>を示唆し、lack-of-fit 検定はそれが<em>誤差に対して有意か</em>を裁定します。反復がなく「予測力」でモデルの妥当性を問いたいなら、抜いて予測する<a href="#/prep1/crossval">交差検証（$Q^2$）</a>が姉妹の道具です。</p>
+<h3>有意性と実質的な意味</h3>
+<p>lack-of-fit が<strong>非有意でもモデルが正しい保証にはなりません</strong>。$F$ の検出力は反復数（$df_{PE}=n-c$）に強く依存し、反復が少ないと真に曲がっていても有意にならない（第2種の誤り）ことがあります。「非有意＝直線でOK」でなく「与えられた反復数では曲がりを検出できなかった」と読みます。逆に有意でも、<strong>実害の大きさは残差の絶対的な大きさで判断</strong>します。$n$ が大きく $MS_{PE}$ が極小だと、同じ曲率なら $F\\propto1/MS_{PE}$ で、実務上無視できる微小な曲率でも $F$ が巨大になり有意化します。「有意か」でなく「モデルを複雑にする価値がある曲がりか」を、<a href="#/prep1/model-selection">AIC</a>や予測誤差と併せて読むのが実務です。</p>
+<div class="note">下で「モデルの次数」（直線／2次）と「データの曲がりの強さ」を動かします。曲がりを強くしたまま直線を選ぶと、赤い直線が緑のグループ平均（各 $x$ の点）から系統的に外れ、$SS_{LOF}$ と $F$ が跳ね上がり $p$ が0に近づきます。2次に上げると曲線がグループ平均を捉えて $SS_{LOF}\\to0$、$F$ が1付近・$p$ が大に。純粋誤差 $SS_{PE}$（各 $x$ 内の縦の散らばり）はどちらの次数でも変わらないこと、曲がりを0にすると直線でも欠如が非有意になることを確認してください。</div>`,
+    demo: {
+      note: '青＝観測、赤＝当てはめたモデル、緑＝各xのグループ平均、灰の縦線＝平均とモデルのズレ(LOF)。曲がりを強めたまま直線だとFが跳ね上がり有意。2次にするか曲がりを0にすると欠如が消えます。',
+      controls: [
+        { type: 'select', id: 'degree', label: 'モデルの次数', value: '1', options: [
+          { value: '1', label: '直線（1次）' },
+          { value: '2', label: '2次曲線' },
+        ]},
+        { type: 'range', id: 'curv', label: 'データの曲がりの強さ', min: 0, max: 1.6, step: 0.1, value: 0.9 },
+        { type: 'range', id: 'noise', label: '測定ノイズ（純粋誤差）', min: 0.1, max: 1.2, step: 0.1, value: 0.5 },
+        { type: 'range', id: 'reps', label: '各水準の反復数', min: 2, max: 6, step: 1, value: 3 },
+        { type: 'button', id: 'reseed', label: '再サンプル' },
+      ],
+      draw(canvas, p) {
+        const st = S(), Pl = P();
+        const rand = st.rng(7 + (p.reseed | 0) * 13);
+        const levels = [1, 2, 3, 4, 5], c = levels.length;
+        const reps = Math.round(p.reps), deg = parseInt(p.degree, 10), np = deg + 1;
+        const xs = [], ys = [];
+        for (const L of levels) for (let i = 0; i < reps; i++) {
+          xs.push(L);
+          ys.push(2 + p.curv * (L - 3) * (L - 3) + p.noise * st.randn(rand));
+        }
+        const n = xs.length;
+        const coef = polyfit(xs, ys, deg);
+        // 水準ごとのグループ平均とモデル予測
+        const ybar = {}, yhat = {};
+        for (const L of levels) {
+          const g = ys.filter((_, k) => xs[k] === L);
+          ybar[L] = st.mean(g); yhat[L] = polyval(coef, L);
+        }
+        let SS_PE = 0, SS_LOF = 0;
+        for (let k = 0; k < n; k++) SS_PE += (ys[k] - ybar[xs[k]]) ** 2;
+        for (const L of levels) SS_LOF += reps * (ybar[L] - yhat[L]) ** 2;
+        const dfL = c - np, dfP = n - c;
+        const F = dfL > 0 ? (SS_LOF / dfL) / (SS_PE / dfP || 1e-9) : NaN;
+        const pval = dfL > 0 ? 1 - st.fCdf(F, dfL, dfP) : NaN;
+        const ymin = Math.min.apply(null, ys) - 1, ymax = Math.max.apply(null, ys) + 1.5;
+        const pl = Pl.make(canvas, { xmin: 0.4, xmax: 5.6, ymin, ymax });
+        pl.clear(); pl.axes({ xLabel: 'x（水準）', yLabel: 'y' });
+        // モデル曲線
+        const grid = st.linspace(0.4, 5.6, 120);
+        pl.line(grid.map(x => [x, polyval(coef, x)]), { color: Pl.colors[1], width: 2.5 });
+        // LOFの縦線（平均→モデル予測）
+        for (const L of levels) pl.line([[L, ybar[L]], [L, yhat[L]]], { color: Pl.gray, width: 1.5, dash: [3, 3] });
+        // 観測点
+        pl.scatter(xs.map((x, k) => [x, ys[k]]), { color: Pl.colors[0], r: 3.2, alpha: 0.7 });
+        // グループ平均
+        for (const L of levels) pl.scatter([[L, ybar[L]]], { color: Pl.colors[2], r: 6 });
+        pl.legend([{ label: '観測', color: Pl.colors[0] }, { label: 'モデル', color: Pl.colors[1] }, { label: '群平均', color: Pl.colors[2] }]);
+        pl.text(0.4, ymax, 'SS_PE=' + SS_PE.toFixed(2) + '（df ' + dfP + '） SS_LOF=' + SS_LOF.toFixed(2) + '（df ' + dfL + '）', { align: 'left', baseline: 'top', dx: 54, dy: 4, color: '#475467', size: 12 });
+        const verdict = !isFinite(pval) ? '検定不能（c≤p）' : (pval < 0.05 ? 'LOF有意：形が不適切' : 'LOF非有意');
+        pl.text(0.4, ymax, 'F=' + (isFinite(F) ? F.toFixed(2) : '–') + '  p=' + (isFinite(pval) ? (pval < 0.001 ? '<0.001' : pval.toFixed(3)) : '–') + '  → ' + verdict, { align: 'left', baseline: 'top', dx: 54, dy: 24, color: pval < 0.05 ? '#c2410c' : '#0f766e', size: 12.5 });
+      },
+    },
+  });
+
+  /* --- 説明変数の選択 --- */
+  T.push({
+    section: 'prep1', group: '回帰分析', id: 'variable-selection', title: '説明変数の選択',
+    summary: '候補変数から「どれをモデルに入れるか」を決める戦略（総当り・前進・後退・ステップワイズ）と規準（AIC・調整済みR²・CV・Lasso）、そして選択後推論の落とし穴を俯瞰します。',
+    body: `
+<p>説明変数の候補がたくさんあるとき、全部入れるのが最善とは限りません。<strong>無関係な変数は係数の分散を増やし解釈を濁す</strong>（<a href="#/prep1/overfitting">バイアス・バリアンス</a>）一方、<strong>本当に効く変数を落とすと欠落変数バイアス</strong>が乗ります。この綱引きの中で「どの変数を入れるか」を決めるのが<strong>説明変数の選択</strong>です。散在する道具——<a href="#/prep1/model-selection">情報量規準</a>・<a href="#/prep1/regularization">正則化</a>・<a href="#/prep1/crossval">交差検証</a>——を、選択という視点で束ねます。</p>
+<h3>探索の戦略</h3>
+<ul>
+<li><strong>総当り（best subset）</strong>：$p$ 個の変数の入り／切りを全通り試す。$2^p$ で爆発し、$p$ が20を超えると非現実的。</li>
+<li><strong>前進選択</strong>：空モデルから、規準が最も改善する変数を1つずつ足す。</li>
+<li><strong>後退除去</strong>：フルモデルから、最も不要な変数を1つずつ抜く（$p\\ge n$ ではフルモデルが推定不能で使えない）。</li>
+<li><strong>ステップワイズ</strong>：足す・抜くを交互に行う折衷。</li>
+</ul>
+<p>前進・後退・ステップワイズは<strong>貪欲法</strong>で、各ステップで最善を選ぶだけなので<strong>総当りの最適を逃す</strong>ことがあり、<strong>不安定</strong>（データが少し変わると選ばれる変数集合が変わる）です。</p>
+<h3>選ぶ規準</h3>
+<p>「良いモデル」を測る物差しで結果が変わります。当てはまり $R^2$ は変数を足すほど必ず上がるので使えず、複雑さに罰を科した指標を使います。</p>
+<ul>
+<li><strong>調整済み $R^2$・AIC・BIC</strong>：<a href="#/prep1/model-selection">モデル選択</a>参照。予測目的ならAIC、真のモデルを絞りたいならBIC。</li>
+<li><strong>マローズの $C_p$</strong>：$C_p=\\mathrm{RSS}_p/\\hat\\sigma^2-n+2p$（$\\hat\\sigma^2$ は<strong>フルモデルの残差分散</strong>）。$C_p\\approx p$ に近いモデルが良い。</li>
+<li><strong>交差検証誤差</strong>：<a href="#/prep1/crossval">未知データでの予測</a>を直接測る。選択が過学習しないかを見るのに最も素直。</li>
+</ul>
+<h3>現代的な代替：正則化</h3>
+<p>変数を「入れる／切る」の離散選択でなく、<strong>Lasso（L1罰）</strong>は係数を連続的に0へ縮め、<strong>選択と縮小を同時に</strong>行います（<a href="#/prep1/regularization">正則化</a>）。ステップワイズより安定で、罰の強さを交差検証で選べます。ただし相関の強い変数群からどれか1つを恣意的に選びがちで（<a href="#/prep1/multicollinearity">多重共線性</a>下で不安定）、その緩和が Elastic Net（L1+L2）です。</p>
+<h3>有意性と実質的な意味（選択後推論の罠）</h3>
+<p>最大の落とし穴は<strong>選択後推論</strong>です。同じデータで変数を「選んで」から、その変数の $p$ 値や信頼区間を<strong>そのまま報告するのは誤り</strong>——選ばれるのは「偶然大きく見えた変数」なので、$p$ 値が楽観的（過小）に出ます。数値実験では、<strong>$y$ が全変数と無関係（純ノイズ, $n{=}60,p{=}8$）でも、最も効いて見える変数を素朴に検定すると $p<0.05$ になる率は 34.5%</strong>——名目5%の約7倍です。さらに前進選択は不安定で、真に効くのが3変数のデータをブートストラップ標本ごとに選び直すと、選ばれる変数集合は500回で約50種類に散らばり、真の3変数ちょうどを当てるのは1割強にすぎませんでした。だから<strong>「選んだ変数集合」は再現しにくい</strong>と心得て、性能評価は選択に使っていない<strong>独立データや入れ子交差検証</strong>で行い、可能なら選択後有効な推論（selective inference）を使います。「AIC最小の1モデル」を唯一の正解とせず、近い候補が複数あるのが普通、が実務的な姿勢です。</p>
+<div class="note">下で「真に効く変数の数・ノイズ・データ数」を動かすと、前進選択が変数を1つずつ足すたびに交差検証誤差（オレンジ）と訓練誤差（青）がどう動くかが見えます。訓練誤差は変数を足すほど下がり続けますが、CV誤差は「本当に効く変数」を入れ終えたあたりで底を打ち、無関係な変数を足すと再び悪化します。その谷が選ぶべき変数の数です。ノイズを上げると谷が浅くなり、選択が不安定になる様子も確認してください。</div>`,
+    demo: {
+      note: '前進選択で変数を1つずつ足したときの、訓練誤差（青・単調減少）とCV誤差（オレンジ・U字）。オレンジの谷＝選ぶべき変数の数。無関係な変数を足すとCV誤差が悪化します。',
+      controls: [
+        { type: 'range', id: 'trueK', label: '本当に効く変数の数', min: 1, max: 6, step: 1, value: 3 },
+        { type: 'range', id: 'noise', label: 'ノイズ', min: 0.3, max: 3, step: 0.3, value: 1.2 },
+        { type: 'range', id: 'n', label: 'データ数', min: 30, max: 150, step: 10, value: 60 },
+        { type: 'button', id: 'reseed', label: '再サンプル' },
+      ],
+      draw(canvas, p) {
+        const st = S(), Pl = P();
+        const rand = st.rng(23 + (p.reseed | 0) * 41);
+        const n = Math.round(p.n), P0 = 10, trueK = Math.round(p.trueK);
+        // データ生成：P0候補、先頭trueKだけ真の係数
+        const X = [], y = [];
+        const beta = [];
+        for (let j = 0; j < P0; j++) beta.push(j < trueK ? (1.2 - 0.12 * j) : 0);
+        for (let i = 0; i < n; i++) {
+          const row = []; let mu = 0;
+          for (let j = 0; j < P0; j++) { const v = st.randn(rand); row.push(v); mu += beta[j] * v; }
+          X.push(row); y.push(mu + p.noise * st.randn(rand));
+        }
+        // 最小二乗（選んだ列＋切片）でCV誤差・訓練誤差を計算するヘルパ
+        const fitCols = (rows, cols, yy) => {
+          const A = rows.map(r => [1].concat(cols.map(c => r[c])));
+          const At = st.transpose(A);
+          const beta = st.solve(st.matmul(At, A), st.matvec(At, yy));
+          return beta;
+        };
+        const predict = (b, row, cols) => b[0] + cols.reduce((s, c, k) => s + b[k + 1] * row[c], 0);
+        const K = 5;
+        const idx = X.map((_, i) => i);
+        for (let i = idx.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); const t = idx[i]; idx[i] = idx[j]; idx[j] = t; }
+        // 前進選択：CV誤差最小の変数を順に足す
+        const chosen = [], remaining = [];
+        for (let j = 0; j < P0; j++) remaining.push(j);
+        const trainErrs = [], cvErrs = [];
+        const cvOf = (cols) => {
+          let se = 0, cnt = 0;
+          for (let f = 0; f < K; f++) {
+            const trR = [], trY = [], vaR = [], vaY = [];
+            idx.forEach((id, pos) => { if (pos % K === f) { vaR.push(X[id]); vaY.push(y[id]); } else { trR.push(X[id]); trY.push(y[id]); } });
+            if (trR.length <= cols.length + 1) continue;
+            let b; try { b = fitCols(trR, cols, trY); } catch (e) { continue; }
+            for (let i = 0; i < vaR.length; i++) { se += (vaY[i] - predict(b, vaR[i], cols)) ** 2; cnt++; }
+          }
+          return cnt ? se / cnt : NaN;
+        };
+        const trainOf = (cols) => {
+          let b; try { b = fitCols(X, cols, y); } catch (e) { return NaN; }
+          let se = 0; for (let i = 0; i < n; i++) se += (y[i] - predict(b, X[i], cols)) ** 2;
+          return se / n;
+        };
+        const maxSteps = Math.min(8, P0);
+        for (let step = 1; step <= maxSteps; step++) {
+          // remaining の中でCV誤差最小の変数を選ぶ
+          let bestJ = -1, bestCv = Infinity;
+          for (const j of remaining) {
+            const cv = cvOf(chosen.concat([j]));
+            if (isFinite(cv) && cv < bestCv) { bestCv = cv; bestJ = j; }
+          }
+          if (bestJ < 0) break;
+          chosen.push(bestJ); remaining.splice(remaining.indexOf(bestJ), 1);
+          trainErrs.push(trainOf(chosen)); cvErrs.push(bestCv);
+        }
+        const m = trainErrs.length;
+        const allE = trainErrs.concat(cvErrs).filter(isFinite);
+        const ymax = (Math.max.apply(null, allE) || 1) * 1.15;
+        const pl = Pl.make(canvas, { xmin: 0.5, xmax: m + 0.5, ymin: 0, ymax });
+        pl.clear(); pl.axes({ xLabel: '選んだ変数の数', yLabel: '誤差 (MSE)', xTicks: trainErrs.map((_, i) => i + 1) });
+        pl.line(trainErrs.map((e, i) => [i + 1, e]), { color: Pl.colors[0], width: 2.5 });
+        pl.scatter(trainErrs.map((e, i) => [i + 1, e]), { color: Pl.colors[0], r: 3 });
+        pl.line(cvErrs.map((e, i) => [i + 1, e]), { color: Pl.colors[1], width: 2.5 });
+        pl.scatter(cvErrs.map((e, i) => [i + 1, e]), { color: Pl.colors[1], r: 3 });
+        let bestK = 1, bestErr = Infinity;
+        cvErrs.forEach((e, i) => { if (isFinite(e) && e < bestErr) { bestErr = e; bestK = i + 1; } });
+        pl.vline(bestK, { color: Pl.colors[2], label: 'CV最小 ' + bestK + '変数（真 ' + trueK + '）' });
+        pl.legend([{ label: '訓練誤差', color: Pl.colors[0] }, { label: '交差検証誤差', color: Pl.colors[1] }]);
       },
     },
   });

@@ -97,6 +97,8 @@
 | **chemo/opls-da** | o | o | o | o | - | 0 | ✅Iter.86 |
 | **prep1/regression** | o | o | o | o | o | 0 | ✅Iter.1で深掘り済 |
 | **prep1/causal-inference** | o | o | o | o | o | 0 | ✅Iter.32(新規) |
+| **prep1/lack-of-fit** | o | o | o | o | o | 0 | ✅新規(ワークフロー設計) |
+| **prep1/variable-selection** | o | o | o | o | o | 0 | ✅新規(ワークフロー設計) |
 
 ---
 
@@ -892,3 +894,24 @@ Iter.1〜86（ローカル＋クラウド並行）で、全86トピックが5層
 **ファイル別完了**: math.js(6)・prob.js(9)・dists.js(3)・prep1.js/prep1b.js/estimation2.js/testing2.js/ml.js/mva.js/advanced.js/advanced2.js/doe.js/chemo.js の全トピック。
 
 **今後の保守メモ**: 新規トピックを足したら本ログのマトリクスに行を追加し、同じ5層基準・検算・verify-topics.js通過を満たすこと。デモを新設/変更したらブラウザで境界値まで実行確認。
+
+## 2026-07-06 — 新規2トピック＋Q²強化（ユーザー要望: lack of fit / 説明変数選択 / Q² / 過学習）
+
+ユーザー要望の4概念をカバー。過学習は既存 overfitting/crossval で充足済みのため相互リンクのみ。設計・数値検証を多エージェントワークフロー（4エージェント, 23.6万トークン, 査読含む）で並列化し、実装は本体で codebase規約に合わせて手書き、全数値を再現可能スクリプトで確定。
+
+**新規 `prep1/lack-of-fit`（適合度の欠如・純粋誤差）** — 回帰分析group, ml.js
+- 5層: $SS_E=SS_{PE}+SS_{LOF}$ 分解（交差項消去の導出）、$F=\frac{SS_{LOF}/(c-p)}{SS_{PE}/(n-c)}$、前提表（反復必須・等分散・c>p）、L5（非有意≠正しい・検出力は反復数依存・$F\propto1/MS_{PE}$）。デモ: 次数×曲がりでLOFのF/pが動く、群平均vsモデルの縦線、SS_PE不変。
+- 検算(python numpy/scipy, c=5 reps=3 n=15 seed=3): 直線 F=90.0 p=1.5e-7 R²=0.001, SS_PE=1.81; 2次 SS_LOF=0.30 F=0.84 p=0.46 R²=0.958 SS_PE不変。棄却限界 F_0.05(3,10)=3.71。✅
+- example+keypoints4+quiz4。
+
+**新規 `prep1/variable-selection`（説明変数の選択）** — 回帰分析group, ml.js
+- 5層: 戦略（総当り$2^p$/前進/後退($p\ge n$不可)/ステップワイズ=貪欲・不安定）、規準（調整R²/AIC/BIC/$C_p$=RSS/σ̂²-n+2p・σ̂²はフルモデル/CV）、Lasso連続縮小・Elastic Net、L5（選択後推論）。デモ: 前進選択の訓練誤差(単調減)vsCV誤差(U字)。
+- 検算(python): 選択後推論=全ノイズn=60,p=8でbest変数の素朴p<0.05率34.5%(名目の6.9倍, 4000反復); 選択の不安定性=500ブートストラップ前進選択で50種類に散る。✅
+- example+keypoints4+quiz4。
+
+**`prep1/crossval` 強化**: Q²（予測的決定係数）セクション新設。$\mathrm{PRESS}=\sum(y_i-\hat y_{-i})^2$, $Q^2=1-\mathrm{PRESS}/\mathrm{TSS}$, $Q^2\le R^2$・負値解釈・$R^2-Q^2$ギャップ=過学習、RMSECV/RMSEP・PLS接続・lack-of-fit使い分け。デモにR²/Q²の数値表示追加。keypoint+quiz2問追加(計4問)。
+- 検算(python, n=40 x∈[-3,3] 3次 σ=2 seed=11 TSS=643.7): R²単調増 0.64→0.80→0.87、Q²はd2-4で0.75ピーク→d10で0.22、gap 0.04→0.65。✅
+
+**双方向リンク**: model-selection→variable-selection, regression-diagnostics→lack-of-fit, overfitting→Q²(crossval)。査読の「往復リンク」「Q²↔lack-of-fit使い分け」指摘に対応。
+
+**検証**: node --check全ファイル, verify-topics.js 88トピック/88クイズ PASS。3トピックともブラウザでKaTeXエラー0・div balance 1/1・デッドリンク0、デモ境界値で例外なし・視覚確認済み。準1級トピック数 71→74。
