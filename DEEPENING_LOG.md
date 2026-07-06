@@ -59,7 +59,7 @@
 | prep1/interaction | o | d | x | o | - | 1.5 | |
 | prep1/goodness-of-fit | o | d | x | o | x | 2.5 | |
 | **prep1/glm** | o | o | o | o | o | 0 | ✅Iter.12 |
-| prep1/gauss-markov | o | d | o | x | x | 2.5 | |
+| **prep1/gauss-markov** | o | o | o | o | o | 0 | ✅Iter.33 |
 | **prep1/fisher-cramer-rao** | o | o | o | o | o | 0 | ✅Iter.24 |
 | prep1/factor | o | d | d | d | x | 2.5 | |
 | prep1/events-probability | o | d | x | o | - | 1.5 | |
@@ -597,3 +597,25 @@
 - 検証: node --check・verify-topics.js パス（85/85）。内部リンク（multiple-regression, mle）実在。✅
 
 **次に深掘りすべきトピック**: `math/gradient`（gap 3.0・勾配と最適化）、`prep1/odds-ratio`（gap 2.5・contingencyと対）、`prep1/clt`（gap 2.5・中心極限定理）。
+
+## 2026-07-06 — Iter.33（ローカルセッション・クラウドと並行）
+
+**対象トピック**: `prep1/gauss-markov`（ガウス・マルコフの定理／BLUE）
+
+**選定理由**: gap 2.5。回帰・重回帰・GLS がこぞって参照する土台なのに L4（デモ）が皆無、L2 も定理の陳述のみで「なぜ最小分散か」が未証明、L5 なしだった。クラウドが計算統計・発展系を進めていたため、衝突しにくい推定論の基礎を選択。
+
+**埋めた層**
+- **L2（新規・証明の骨子）**: 線形不偏 $\tilde\beta=C\boldsymbol y$、不偏条件 $CX=I$。$C=C_0+D$（$C_0$=OLS）とおくと $DX=O$、$V[\tilde\beta]=V[\hat\beta]+\sigma^2 DD^\top$ と交差項が消え、半正定値 $DD^\top$ よりOLSが最小。「等分散・無相関」がこの交差項消去の前提そのもの、と明示。
+- **L4（新規デモ）**: OLS傾き vs「前半・後半の平均差」（ともに線形不偏）の標本分布を重ねる。学習目標＝BLUEの意味の可視化。操作＝不等分散の強さ・n／確認＝等分散でOLSが必ず細い（最小分散）、不等分散を上げるとOLSが最良でなくなる／対応数式＝$V[\tilde\beta]=V[\hat\beta]+\sigma^2DD^\top$。両推定量のSDを数値表示し、勝者に「←最小」ラベル。
+- **L5（新規）**: 「最良」は線形・不偏の枠内の話。枠を外せばMSEの小さいリッジ回帰が存在（不偏≠正義、MSEで測る）。定理は分散最小と言うだけで実用十分とは言わない→SE・信頼区間で不確かさごと報告。
+- **L3（温存）**: 既存の note（正規性不要・不等分散/系列相関でGLS）を保持、WLSを追記。
+
+**検算結果（python3 独立実装, reps=6000, n=20）**
+- 等分散 hetero=0: Var(OLS)=0.0340 < Var(split)=0.0457 → OLSがBLUE。✅
+- 不等分散 hetero=0.8: Var(OLS)=0.1783 > Var(split)=0.1677 → OLSは最小でない（前提依存を実証）。✅
+- ブラウザ実測: hetero=0 で OLS SD=0.183<0.210、hetero=1.5 で OLS SD=0.624>0.576（逆転）をスクリーンショット確認。デモ境界（n=8/40）で例外なし。✅
+- 検証: node --check・verify-topics.js パス（86/86＝因果推論トピック込み）。div balance 2/2、KaTeXエラー0。✅
+
+**運用メモ**: このセッション中にクラウドセッションが並行して Iter.20〜32（pls-da〜linearization）＋因果推論トピック＋デザインD3-D7 を main に反映済みだった。ローカルで先行着手した pls-da(Iter.20相当)はクラウドと重複のため破棄し、origin/main に同期のうえ本 Iter.33 を上乗せ。**以後クラウドと同時進行する場合はプッシュ直前に必ず `git fetch` で衝突確認すること**。
+
+**次に深掘りすべきトピック**: `prep1/estimator-properties`（gap 2.5・全推定論の入口）、`prep1/model-selection`（gap 2.5・AIC/BIC）、`prep1/monte-carlo`（gap 2.5）。※着手前に DEEPENING_LOG.md 最新版でクラウドの進捗を再確認すること。

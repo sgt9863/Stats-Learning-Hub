@@ -253,11 +253,63 @@
 <p>線形モデル $\\boldsymbol y=X\\boldsymbol\\beta+\\boldsymbol\\varepsilon$ で、誤差が次を満たすとします。</p>
 <p>$$ E[\\boldsymbol\\varepsilon]=\\boldsymbol0,\\quad V[\\boldsymbol\\varepsilon]=\\sigma^2 I\\ (\\text{等分散・無相関}) $$</p>
 <p><strong>ガウス・マルコフの定理</strong>：このとき最小二乗推定量 $\\hat{\\boldsymbol\\beta}=(X^\\top X)^{-1}X^\\top\\boldsymbol y$ は、すべての<strong>線形</strong>な<strong>不偏</strong>推定量のなかで<strong>分散が最小</strong>になります。頭文字をとって <strong>BLUE</strong>（Best Linear Unbiased Estimator）。</p>
+<h3>なぜ最小分散になるか（証明の骨子）</h3>
+<p>「線形」とは推定量が $\\tilde{\\boldsymbol\\beta}=C\\boldsymbol y$（$C$ は定数行列）と書けること。「不偏」は $E[\\tilde{\\boldsymbol\\beta}]=\\boldsymbol\\beta$ が任意の $\\boldsymbol\\beta$ で成り立つこと——$E[C\\boldsymbol y]=CX\\boldsymbol\\beta$ なので、条件は $CX=I$ です。OLS の $C_0=(X^\\top X)^{-1}X^\\top$ もこれを満たします。任意の線形不偏推定量を $C=C_0+D$ と置くと、$CX=I$ と $C_0X=I$ から $DX=O$。分散を計算すると</p>
+<p>$$ V[\\tilde{\\boldsymbol\\beta}]=\\sigma^2 CC^\\top=\\sigma^2\\big(C_0C_0^\\top+DD^\\top\\big)=V[\\hat{\\boldsymbol\\beta}]+\\sigma^2 DD^\\top $$</p>
+<p>と、交差項が $DX=O$ のおかげで消えます。$DD^\\top$ は半正定値なので、その対角（各係数の分散）は必ず0以上——<strong>どんな線形不偏推定量もOLSより分散が小さくなれない</strong>。「等分散・無相関」（$V[\\boldsymbol\\varepsilon]=\\sigma^2 I$）は、この交差項が消える計算の前提そのものです。ここが崩れると $DD^\\top$ 項が負にもなり得て、OLSは最良でなくなります。</p>
 <div class="note">重要なのは「正規分布は仮定していない」こと。誤差が正規でなくても、等分散・無相関でありさえすればOLSは最良の線形不偏推定量です。ただし前提が崩れると最良でなくなります：
 <ul>
-<li><strong>不等分散（heteroscedasticity）</strong>や<strong>系列相関</strong>があると $V[\\boldsymbol\\varepsilon]\\ne\\sigma^2 I$ になり、<a href="#/prep1/regression-diagnostics">一般化最小二乗（GLS）</a>のほうが有効。</li>
+<li><strong>不等分散（heteroscedasticity）</strong>や<strong>系列相関</strong>があると $V[\\boldsymbol\\varepsilon]\\ne\\sigma^2 I$ になり、<a href="#/prep1/regression-diagnostics">一般化最小二乗（GLS）</a>や加重最小二乗（WLS）のほうが有効。</li>
 <li>正規性を追加で仮定すると、OLSは線形に限らず全不偏推定量のなかで最良（最尤推定量と一致）になる。</li>
-</ul></div>`,
+</ul></div>
+<h3>「最良」は前提とセット（実質的な意味）</h3>
+<p>ガウス・マルコフが保証するのは<strong>「線形かつ不偏」という枠の中での</strong>最良さにすぎません。枠を外せば、OLSより<strong>平均二乗誤差の小さい推定量</strong>は存在します——わざと少し偏らせる代わりに分散を大きく下げる<a href="#/prep1/regularization">リッジ回帰</a>がその典型で、多重共線性の下ではOLS（不偏）より予測が安定します。「不偏＝正義」ではなく、<strong>バイアスと分散の合計（MSE）で測る</strong>のが実務の視点です。また定理は<strong>分散が最小と言うだけで、その分散が実用に足るほど小さいとは言っていません</strong>——$\\mathrm{Var}(\\hat{\\boldsymbol\\beta})=\\sigma^2(X^\\top X)^{-1}$ が大きければ、BLUEでも係数は当てにならず、標準誤差と信頼区間で不確かさごと報告する必要があります。</p>
+<div class="note">下は単回帰の傾きを、2つの<strong>線形不偏</strong>推定量——OLS と「前半・後半の平均差」——で何度も推定し、標本分布を重ねたもの。<strong>不等分散を0にする（等分散）とOLSの山が必ず細く</strong>なります（＝分散最小＝BLUE）。ところが不等分散を上げると前提が崩れ、OLSがもう最小分散ではなくなる（別の推定量に負ける）ことが見えます。両者の標準偏差を数値で表示します。</div>`,
+    demo: {
+      note: '2つの線形不偏推定量の傾きの散らばり比較。不等分散=0（等分散）ではOLS（青）が必ず狭い＝BLUE。不等分散を上げるとOLSが最良でなくなり、単純な平均差推定量（オレンジ）に分散で負けることがあります——「最良」は等分散の前提つき。',
+      controls: [
+        { type: 'range', id: 'hetero', label: '不等分散の強さ', min: 0, max: 1.5, step: 0.1, value: 0 },
+        { type: 'range', id: 'n', label: '標本サイズ n', min: 8, max: 40, step: 2, value: 20 },
+        { type: 'button', id: 'reseed', label: '再サンプル' },
+      ],
+      draw(canvas, p) {
+        const st = S(), Pl = P();
+        const rand = st.rng(71 + (p.reseed | 0) * 41);
+        const n = Math.round(p.n), reps = 2500;
+        const xs = [];
+        for (let i = 0; i < n; i++) xs.push(-2 + 4 * i / (n - 1));
+        const xbar = st.mean(xs);
+        let sxx = 0; for (const x of xs) sxx += (x - xbar) ** 2;
+        const half = Math.floor(n / 2);
+        const loX = st.mean(xs.slice(0, half)), hiX = st.mean(xs.slice(half));
+        const bTrue = 1.5;
+        const olsE = [], splE = [];
+        for (let r = 0; r < reps; r++) {
+          const ys = xs.map(x => bTrue * x + 3 + (1 + p.hetero * Math.abs(x)) * st.randn(rand));
+          const ybar = st.mean(ys);
+          let sxy = 0; for (let i = 0; i < n; i++) sxy += (xs[i] - xbar) * (ys[i] - ybar);
+          olsE.push(sxy / sxx);
+          const loY = st.mean(ys.slice(0, half)), hiY = st.mean(ys.slice(half));
+          splE.push((hiY - loY) / (hiX - loX));
+        }
+        const sdO = st.sd(olsE), sdS = st.sd(splE);
+        const lo = bTrue - 1.6, hi = bTrue + 1.6;
+        const binsO = st.histogram(olsE.filter(v => v >= lo && v <= hi), 46, lo, hi);
+        const binsS = st.histogram(splE.filter(v => v >= lo && v <= hi), 46, lo, hi);
+        const ymax = Math.max(Math.max.apply(null, binsO.map(b => b.density)), Math.max.apply(null, binsS.map(b => b.density))) * 1.12 || 1;
+        const pl = Pl.make(canvas, { xmin: lo, xmax: hi, ymin: 0, ymax });
+        pl.clear(); pl.axes({ xLabel: '推定した傾き b̂', yLabel: '密度' });
+        pl.bars(binsS.map(b => ({ x0: b.x0, x1: b.x1, y: b.density })), { color: Pl.colors[1], alpha: 0.45 });
+        pl.bars(binsO.map(b => ({ x0: b.x0, x1: b.x1, y: b.density })), { color: Pl.colors[0], alpha: 0.5 });
+        pl.vline(bTrue, { color: Pl.ink, dash: [6, 3], label: '真の傾き ' + bTrue });
+        const olsWins = sdO <= sdS;
+        pl.legend([
+          { label: 'OLS (SD ' + sdO.toFixed(3) + ')' + (olsWins ? ' ← 最小' : ''), color: Pl.colors[0] },
+          { label: '平均差 (SD ' + sdS.toFixed(3) + ')' + (!olsWins ? ' ← 最小' : ''), color: Pl.colors[1] },
+        ]);
+        pl.text(lo, ymax, olsWins ? 'OLSが最小分散＝BLUE（等分散の前提が生きている）' : 'OLSはもう最小でない＝前提（等分散）が崩れている', { align: 'left', baseline: 'top', dx: 56, dy: 4, color: olsWins ? '#0f766e' : '#c2410c', size: 12 });
+      },
+    },
   });
 
   /* --- 順序統計量 --- */
