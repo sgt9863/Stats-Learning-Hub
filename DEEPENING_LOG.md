@@ -32,9 +32,9 @@
 | **prep1/orthogonal** | o | o | o | o | o | 0 | ✅Iter.19 |
 | prep1/order-statistics | o | o | x | d | - | 1.5 | |
 | prep1/odds-ratio | o | x | d | o | x | 2.5 | |
-| prep1/normal-tests | o | x | o | d | x | 2.5 | |
+| **prep1/normal-tests** | o | o | o | o | o | 0 | ✅Iter.55 |
 | **prep1/normal-approx** | o | o | o | o | - | 0 | ✅Iter.42 |
-| prep1/nonparametric | o | d | o | o | x | 1.5 | |
+| **prep1/nonparametric** | o | o | o | o | o | 0 | ✅Iter.57 |
 | **prep1/neyman-pearson** | o | o | o | o | o | 0 | ✅Iter.52 |
 | **prep1/multivariate-normal** | o | o | o | o | - | 0 | ✅Iter.45 |
 | **prep1/multiple-regression** | o | o | o | o | o | 0 | ✅Iter.10 |
@@ -57,7 +57,7 @@
 | prep1/kmeans | o | d | x | o | - | 1.5 | |
 | **prep1/joint-distribution** | o | o | o | o | - | 0 | ✅Iter.34 |
 | prep1/interaction | o | d | x | o | - | 1.5 | |
-| prep1/goodness-of-fit | o | d | x | o | x | 2.5 | |
+| **prep1/goodness-of-fit** | o | o | o | o | o | 0 | ✅Iter.56 |
 | **prep1/glm** | o | o | o | o | o | 0 | ✅Iter.12 |
 | **prep1/gauss-markov** | o | o | o | o | o | 0 | ✅Iter.33 |
 | **prep1/fisher-cramer-rao** | o | o | o | o | o | 0 | ✅Iter.24 |
@@ -766,3 +766,23 @@ KaTeXエラー0・div balance OK。verify-topics.js 86/86 PASS。**math.js（数
 KaTeXエラー0・div balance OK・内部リンク（three-tests, normal-approx）実在。verify-topics.js 86/86 PASS。
 
 **次に深掘りすべきトピック**: `prep1/normal-tests`(2.5)・`prep1/goodness-of-fit`(2.5)（testing2.js残り）→ `prep1/nonparametric`(1.5)・`prep1/model-selection`(2.5)・`prep1/delta-method`(2.5)（prep1b.js）。※着手前にクラウド進捗を再確認。
+
+## 2026-07-06 — Iter.55-57（検定論の残り・testing2.js完結）
+
+**Iter.55 `prep1/normal-tests`**
+- L2: 全統計量が「推定量÷標準誤差」、t/χ²/F/正規が正規標本から芋づる式に導かれる（F=χ²比の定義）。
+- L3: 平均のtは頑健だが分散のχ²/Fは正規性に極端に敏感→Levene、等分散崩れはWelch、非正規はノンパラ。
+
+**Iter.56 `prep1/goodness-of-fit`**
+- L2: O_i≈N(E_i,E_i)（二項→正規）で (O-E)/√E≈N(0,1)、二乗和がχ²。自由度k-1-m。
+- L3: E_i≥5の目安、度数専用・独立、少数セルはフィッシャー正確検定/G検定、順序はコクラン・アーミテージ。
+
+**Iter.57 `prep1/nonparametric`**
+- L2: 帰無で順位割当がランダム→E[W]=n1(N+1)/2、Var=n1n2(N+1)/12（有限母集団）。
+- L5: ARE=3/π≈0.955（正規でも損失5%弱＝保険料）、裾重で t を上回る。分散/形が違うと解釈ぶれ、効果量はクリフのδ。
+- 検算: E[W]=105・Var=175実測一致、ARE=0.955。✅
+
+KaTeXエラー0・div balance OK・内部リンク（distributions, nonparametric, correlation, normal-approx）実在。verify-topics.js 86/86 PASS。**testing2.js の検定群（neyman-pearson, three-tests, normal-tests, goodness-of-fit, multiple-comparison, sample-size）全完了**。
+
+**残り約27**: prep1b.js（model-selection, delta-method, path-analysis, factor, arima, acf-pacf済, missing-data, log-linear済…）、ml.js/mva.js（overfitting, svm, roc-auc, kmeans, clustering, regularization済, regression-diagnostics, correlation, factor, clt, markov-chain, monte-carlo, order-statistics, odds-ratio済…）、advanced系、doe系（rsm, ccd済, d-optimal, blocking-designs, rsm-error, robust）、chemo/opls-da。
+**次**: `prep1/model-selection`(2.5)・`prep1/delta-method`(2.5)・`prep1/overfitting`(2.5)。※着手前にクラウド進捗を再確認。
