@@ -31,7 +31,7 @@
 | **prep1/overfitting** | o | o | o | o | o | 0 | ✅Iter.61 |
 | **prep1/orthogonal** | o | o | o | o | o | 0 | ✅Iter.19 |
 | **prep1/order-statistics** | o | o | o | o | - | 0 | ✅Iter.60 |
-| prep1/odds-ratio | o | x | d | o | x | 2.5 | |
+| **prep1/odds-ratio** | o | o | o | o | o | 0 | ✅Iter.73 |
 | **prep1/normal-tests** | o | o | o | o | o | 0 | ✅Iter.55 |
 | **prep1/normal-approx** | o | o | o | o | - | 0 | ✅Iter.42 |
 | **prep1/nonparametric** | o | o | o | o | o | 0 | ✅Iter.57 |
@@ -40,12 +40,12 @@
 | **prep1/multiple-regression** | o | o | o | o | o | 0 | ✅Iter.10 |
 | **prep1/multiple-comparison** | o | o | o | o | o | 0 | ✅Iter.53 |
 | **prep1/multicollinearity** | o | o | o | o | o | 0 | ✅Iter.67 |
-| prep1/monte-carlo | o | d | x | o | x | 2.5 | |
+| **prep1/monte-carlo** | o | o | o | o | o | 0 | ✅Iter.75 |
 | **prep1/moments-shape** | o | o | o | o | - | 0 | ✅Iter.35 |
 | **prep1/moment-method** | o | o | o | o | o | 0 | ✅Iter.18 |
 | **prep1/model-selection** | o | o | o | o | o | 0 | ✅Iter.64 |
 | **prep1/mle** | o | o | o | o | o | 0 | ✅Iter.5 |
-| prep1/missing-data | o | x | d | o | x | 2.5 | |
+| **prep1/missing-data** | o | o | o | o | o | 0 | ✅Iter.74 |
 | **prep1/mgf** | o | o | o | o | - | 0 | ✅Iter.39 |
 | **prep1/mds-ca** | o | o | o | o | o | 0 | ✅Iter.15 |
 | **prep1/mcmc** | o | o | o | o | - | 0 | ✅Iter.27 |
@@ -839,3 +839,14 @@ KaTeXエラー0・div balance OK・内部リンク（eigen, mcmc, timeseries, ac
 
 **残り約14**: path-analysis, factor(mva.js), missing-data, monte-carlo, blocking-designs, sampling-survey, odds-ratio(advanced2.js), interaction, principles, rsm, rsm-error, d-optimal, robust(doe.js), opls-da(chemo.js)。
 **次**: `prep1/monte-carlo`(2.5)・`prep1/odds-ratio`(2.5)・`prep1/missing-data`(2.5)（advanced2.js）。※着手前にクラウド進捗を再確認。
+
+## 2026-07-06 — Iter.73-75（分割表・欠測・モンテカルロ）
+
+**Iter.73 `prep1/odds-ratio`** — L2: ORは行列入替対称ゆえ症例対照でも計算可、RRはコホート限定、まれでOR≈RR/多いとOR誇張。L5: ln区間・連続修正、交絡→調整OR、絶対リスク併記。検算: まれ2.51/2.50、多い2.67/2.00。
+**Iter.74 `prep1/missing-data`** — L2: EMは尤度単調増加で収束、単一代入はSE過小→多重代入とルービン公式。L3: MAR/MNARはデータで区別不能、感度分析、量より起こり方。
+**Iter.75 `prep1/monte-carlo`** — L2: CLTで誤差σ/√N、次元に強い(次元の呪い回避)、棄却率1/c。L3: 乱数の質・MCMC相関・分散有限、分散減少法(重点/対照/準MC)。検算: N4倍でSE0.050→0.027。
+
+KaTeXエラー0・div balance OK・内部リンク（sampling-survey, causal-inference, mle, clt, mcmc）実在(verify-topics.js全ファイルPASS)。86/86。
+
+**残り約11**: path-analysis, factor(mva.js), blocking-designs, sampling-survey(advanced2.js), interaction, principles, rsm, rsm-error, d-optimal, robust(doe.js), opls-da(chemo.js)。
+**次**: `prep1/factor`(2.5, mva.js)・`prep1/path-analysis`(2.5)・`prep1/sampling-survey`(1)（advanced2.js）。※着手前にクラウド進捗を再確認。
