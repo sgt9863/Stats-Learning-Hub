@@ -336,6 +336,96 @@
     },
   });
 
+  /* --- 因果推論（潜在結果・交絡・調整） --- */
+  T.push({
+    section: 'prep1', group: '因果推論', id: 'causal-inference', title: '因果推論（潜在結果・交絡・調整）',
+    summary: '「相関」から「因果」へ踏み込むための枠組み。潜在結果で処置効果を定義し、交絡による見かけの効果を調整で取り除く考え方を、散布図で体感します。',
+    body: `
+<p>「広告を見た人は購入率が高い」——では広告に<strong>効果があった</strong>のでしょうか。もともと買う気の人ほど広告も見た、だけかもしれません。<a href="#/prep1/correlation">相関</a>は「一緒に動く」ことしか言わず、<strong>因果</strong>（介入したら結果が変わるか）は別問題です。これを扱う枠組みが<strong>因果推論</strong>で、準1級でも扱われます。</p>
+<h3>潜在結果と処置効果</h3>
+<p>各個体 $i$ に、処置を受けたときの結果 $Y_i(1)$ と受けなかったときの結果 $Y_i(0)$ の<strong>2つの潜在結果</strong>を考えます。個体の因果効果は $Y_i(1)-Y_i(0)$。ところが現実には<strong>どちらか一方しか観測できない</strong>（買った人の「買わなかった世界」は見えない）——これが<strong>因果推論の根本問題</strong>です。そこで集団平均の<strong>平均処置効果 (ATE)</strong> を狙います。</p>
+<p>$$ \\mathrm{ATE}=E[Y(1)-Y(0)] $$</p>
+<h3>なぜ単純比較は偏るのか</h3>
+<p>観測データで処置群と対照群の平均を引き算すると、</p>
+<p>$$ \\underbrace{E[Y\\mid T{=}1]-E[Y\\mid T{=}0]}_{\\text{見かけの差}}=\\underbrace{\\mathrm{ATE}}_{\\text{真の効果}}+\\underbrace{\\big(E[Y(0)\\mid T{=}1]-E[Y(0)\\mid T{=}0]\\big)}_{\\text{交絡（選択）バイアス}} $$</p>
+<p>第2項は「処置を受けた人ともともと違う人たちだった」ズレ＝<strong>交絡</strong>です。$X$（例：重症度）が処置 $T$ と結果 $Y$ の<strong>両方</strong>に効くと、$T$ の見かけの効果に $X$ の影響が混入します。<strong>ランダム化比較試験（RCT）</strong>は処置をコインで割り付けて $T\\perp(Y(0),Y(1))$ を保証し、この第2項をゼロにする——だから「因果の王道」なのです。</p>
+<h3>観測データでの調整</h3>
+<p>ランダム化できないときは、交絡変数 $X$ をそろえて比較します。<strong>バックドア基準</strong>で「$T$ と $Y$ の裏口経路」を塞ぐ $X$ を選び、</p>
+<p>$$ E[Y(1)]=E_X\\big[E[Y\\mid T{=}1,X]\\big] $$</p>
+<p>のように $X$ で条件づけて平均します。実装は、$X$ を入れた<a href="#/prep1/multiple-regression">回帰</a>で調整する／$X$ の層ごとに比較する（層別）／傾向スコア $e(x)=P(T{=}1\\mid X{=}x)$（<a href="#/prep1/logistic">ロジスティック回帰</a>で推定）でマッチングや<strong>逆確率重みづけ (IPW)</strong> を行う、などです。数値実験では、交絡で単純差が $2.0\\to5.6$ に膨らむデータでも、$X$ を入れた回帰調整は真の効果 $2.0$ を回復しました。</p>
+<h3>前提条件と、崩れたときの影響</h3>
+<table class="simple">
+<tr><th>前提</th><th>崩れると起きること</th><th>対処・代替</th></tr>
+<tr><td>条件つき交換可能性（未測定交絡なし）</td><td>測っていない交絡があると調整しても効果が偏る。<strong>この仮定はデータで検証できない</strong></td><td>感度分析・操作変数法・自然実験・差分の差分</td></tr>
+<tr><td>正値性（重なり）$0<e(x)<1$</td><td>ある $X$ で片群しかいないと比較対象が無く、IPWの重みが爆発</td><td>共通サポートに限定・重みの打ち切り・トリミング</td></tr>
+<tr><td>SUTVA（干渉なし・一貫性）</td><td>他者の処置が自分の結果に影響（波及）すると効果が定義できない</td><td>クラスター設計・干渉を含むモデル</td></tr>
+<tr><td>合流点・中間変数で条件づけない</td><td>合流点（コライダー）や処置後変数で層別すると<strong>逆に</strong>偽の関連を生む</td><td>調整集合をDAGで吟味・処置後変数は入れない</td></tr>
+</table>
+<h3>有意性と実質的な意味</h3>
+<p>回帰係数が有意でも、それが<strong>因果効果とは限りません</strong>。推定が因果として読めるのは「未測定交絡なし」という<strong>検証不能な仮定</strong>が成り立つ時だけで、$p$ 値はその仮定を保証しません。交絡は効果の大きさを変えるだけでなく<strong>符号すら反転</strong>させます（<a href="#/prep1/contingency">シンプソンのパラドックス</a>）。だから「調整前後で効果がどれだけ動くか」「未測定交絡がどれほど強ければ結論が覆るか（感度分析）」を必ず添えます。また ATE（集団全体）と ATT（処置を受けた人での効果）は別物で、政策の問いに合う推定量を選ぶことも実質的意味では重要です。</p>
+<div class="note">下は交絡のある観測データ。横軸が交絡変数 $X$（重症度など）、縦軸が結果 $Y$、青が処置群・オレンジが対照群。<strong>交絡の強さ</strong>を上げると青が右（高 $X$）に偏り、単純な群平均差（点線）が真の効果から離れます。一方、$X$ をそろえた2本の回帰直線の<strong>縦の間隔</strong>＝調整後の効果は、交絡を変えても真の効果の近くに留まります。「見かけの差」と「調整後」の乖離が交絡バイアスそのものです。</div>`,
+    demo: {
+      heading: '🔀 交絡と調整（処置効果の推定）',
+      note: '青＝処置群・オレンジ＝対照群。点線は群平均どうしの差（単純比較）。2本の回帰直線の縦の間隔が「Xをそろえた」調整後の効果。交絡を強めると単純差だけが真の効果からずれます。',
+      controls: [
+        { type: 'range', id: 'conf', label: '交絡の強さ', min: 0, max: 2.5, step: 0.1, value: 1.2 },
+        { type: 'range', id: 'tau', label: '真の処置効果 τ', min: 0, max: 4, step: 0.5, value: 2 },
+        { type: 'button', id: 'reseed', label: '再サンプル' },
+      ],
+      draw(canvas, p) {
+        const st = S(), Pl = P();
+        const rand = st.rng(311 + (p.reseed | 0) * 53);
+        const n = 140, tau = p.tau, gamma = 2.2, conf = p.conf;
+        const X = [], Y = [], Tt = [];
+        for (let i = 0; i < n; i++) {
+          const x = st.randn(rand);
+          const e = 1 / (1 + Math.exp(-conf * x));
+          const t = rand() < e ? 1 : 0;
+          const y = tau * t + gamma * x + 0.9 * st.randn(rand);
+          X.push(x); Y.push(y); Tt.push(t);
+        }
+        // 単純比較（群平均差）
+        let s1 = 0, c1 = 0, s0 = 0, c0 = 0;
+        for (let i = 0; i < n; i++) { if (Tt[i]) { s1 += Y[i]; c1++; } else { s0 += Y[i]; c0++; } }
+        const m1 = c1 ? s1 / c1 : 0, m0 = c0 ? s0 / c0 : 0, naive = m1 - m0;
+        // 回帰調整 Y ~ b0 + tauHat*T + gHat*X （3x3 正規方程式をガウス消去）
+        const A = [[0, 0, 0], [0, 0, 0], [0, 0, 0]], bv = [0, 0, 0];
+        for (let i = 0; i < n; i++) {
+          const z = [1, Tt[i], X[i]];
+          for (let a = 0; a < 3; a++) { bv[a] += z[a] * Y[i]; for (let b = 0; b < 3; b++) A[a][b] += z[a] * z[b]; }
+        }
+        // solve 3x3
+        const M = A.map((r, i) => r.concat(bv[i]));
+        for (let col = 0; col < 3; col++) {
+          let piv = col; for (let r = col + 1; r < 3; r++) if (Math.abs(M[r][col]) > Math.abs(M[piv][col])) piv = r;
+          const tmp = M[col]; M[col] = M[piv]; M[piv] = tmp;
+          const d = M[col][col] || 1e-9;
+          for (let j = col; j <= 3; j++) M[col][j] /= d;
+          for (let r = 0; r < 3; r++) { if (r === col) continue; const f = M[r][col]; for (let j = col; j <= 3; j++) M[r][j] -= f * M[col][j]; }
+        }
+        const b0 = M[0][3], tauHat = M[1][3], gHat = M[2][3];
+        // 描画
+        const xmin = -3, xmax = 3;
+        const allY = Y.concat([m0, m1]);
+        const ymin = Math.min.apply(null, allY) - 1, ymax = Math.max.apply(null, allY) + 1;
+        const pl = Pl.make(canvas, { xmin, xmax, ymin, ymax });
+        pl.clear(); pl.axes({ xLabel: '交絡変数 X（重症度など）', yLabel: '結果 Y' });
+        // 群平均の水平点線
+        pl.hline(m0, { color: Pl.colors[1], dash: [3, 3] });
+        pl.hline(m1, { color: Pl.colors[0], dash: [3, 3] });
+        // 散布
+        pl.scatter(X.map((x, i) => [x, Y[i]]).filter((_, i) => Tt[i] === 0), { color: Pl.colors[1], r: 3.2, alpha: 0.7 });
+        pl.scatter(X.map((x, i) => [x, Y[i]]).filter((_, i) => Tt[i] === 1), { color: Pl.colors[0], r: 3.2, alpha: 0.7 });
+        // 調整後の平行2直線
+        pl.line([[xmin, b0 + gHat * xmin], [xmax, b0 + gHat * xmax]], { color: Pl.colors[1], width: 2.5 });
+        pl.line([[xmin, b0 + tauHat + gHat * xmin], [xmax, b0 + tauHat + gHat * xmax]], { color: Pl.colors[0], width: 2.5 });
+        pl.text(xmin, ymax, '単純比較（点線の差）= ' + naive.toFixed(2), { align: 'left', baseline: 'top', dx: 56, dy: 4, color: '#475467', size: 12.5 });
+        pl.text(xmin, ymax, '調整後 τ̂（直線の間隔）= ' + tauHat.toFixed(2) + '（真値 ' + tau.toFixed(1) + '）', { align: 'left', baseline: 'top', dx: 56, dy: 24, color: Pl.colors[2], size: 12.5 });
+        pl.legend([{ label: '処置群 T=1', color: Pl.colors[0] }, { label: '対照群 T=0', color: Pl.colors[1] }]);
+      },
+    },
+  });
+
   /* --- 多項式フィット用ヘルパー（正規方程式をガウス消去で解く） --- */
   function polyfit(xs, ys, deg) {
     const n = deg + 1;
