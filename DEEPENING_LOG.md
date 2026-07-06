@@ -25,7 +25,7 @@
 | **prep1/regularization** | o | o | o | o | o | 0 | ✅Iter.21 |
 | **prep1/regression-diagnostics** | o | o | o | o | o | 0 | ✅Iter.66 |
 | **prep1/random-variables** | o | o | o | o | - | 0 | ✅Iter.36 |
-| prep1/principles | d | x | x | o | o | 2.5 | |
+| **prep1/principles** | o | o | o | o | o | 0 | ✅Iter.82 |
 | **prep1/pca** | o | o | o | o | - | 0 | ✅Iter.6 |
 | **prep1/path-analysis** | o | o | o | o | o | 0 | ✅Iter.77 |
 | **prep1/overfitting** | o | o | o | o | o | 0 | ✅Iter.61 |
@@ -56,7 +56,7 @@
 | **prep1/lda** | o | o | o | o | o | 0 | ✅Iter.7 |
 | **prep1/kmeans** | o | o | o | o | - | 0 | ✅Iter.68 |
 | **prep1/joint-distribution** | o | o | o | o | - | 0 | ✅Iter.34 |
-| prep1/interaction | o | d | x | o | - | 1.5 | |
+| **prep1/interaction** | o | o | o | o | - | 0 | ✅Iter.83 |
 | **prep1/goodness-of-fit** | o | o | o | o | o | 0 | ✅Iter.56 |
 | **prep1/glm** | o | o | o | o | o | 0 | ✅Iter.12 |
 | **prep1/gauss-markov** | o | o | o | o | o | 0 | ✅Iter.33 |
@@ -76,7 +76,7 @@
 | **prep1/clustering** | o | o | o | o | - | 0 | ✅Iter.69 |
 | **prep1/clt** | o | o | o | o | o | 0 | ✅Iter.58 |
 | **prep1/bootstrap** | o | o | o | o | o | 0 | ✅Iter.17 |
-| prep1/blocking-designs | x | d | d | d | o | 2.5 | |
+| **prep1/blocking-designs** | o | o | o | o | o | 0 | ✅Iter.85 |
 | **prep1/bayes** | o | o | o | o | o | 0 | ✅Iter.11 |
 | **prep1/arima** | o | o | o | o | o | 0 | ✅Iter.71 |
 | **prep1/anova1** | o | o | o | o | o | 0 | ✅Iter.4で深掘り済 |
@@ -89,12 +89,12 @@
 | **math/covariance-matrix** | o | o | o | o | - | 0 | ✅Iter.47 |
 | **doe/rsm-error** | o | o | o | o | o | 0 | ✅Iter.81 |
 | **doe/rsm** | o | o | o | o | o | 0 | ✅Iter.79 |
-| doe/robust | o | x | o | d | - | 1.5 | |
+| **doe/robust** | o | o | o | o | - | 0 | ✅Iter.84 |
 | **doe/d-optimal** | o | o | o | o | o | 0 | ✅Iter.80 |
 | **doe/ccd** | o | o | o | o | o | 0 | ✅Iter.29 |
 | **chemo/pls-da** | o | o | o | o | o | 0 | ✅Iter.20 |
 | **chemo/pls** | o | o | o | o | o | 0 | ✅Iter.28 |
-| chemo/opls-da | o | x | x | d | - | 2.5 | |
+| **chemo/opls-da** | o | o | o | o | - | 0 | ✅Iter.86 |
 | **prep1/regression** | o | o | o | o | o | 0 | ✅Iter.1で深掘り済 |
 | **prep1/causal-inference** | o | o | o | o | o | 0 | ✅Iter.32(新規) |
 
@@ -872,3 +872,23 @@ KaTeXエラー0・div balance OK・内部リンク（rsm-error, robust, multivar
 
 **残り約5**: blocking-designs(advanced2.js), interaction, principles, robust(doe.js), opls-da(chemo.js)。
 **次（ラスト）**: `doe/robust`(1.5)・`prep1/principles`(2.5)・`prep1/interaction`(1.5)・`prep1/blocking-designs`(2.5)・`chemo/opls-da`(2.5)。※着手前にクラウド進捗を再確認。
+
+## 2026-07-06 — Iter.82-86（DoE基礎・OPLS-DA／全トピック完了）
+
+**Iter.82 `prep1/principles`** — L2: 3原則＝誤差の3扱い（反復=測る/無作為化=無害化/局所管理=除く）。L3: 疑似反復の誤り、無作為化欠如で交絡、一般化の限界。
+**Iter.83 `prep1/interaction`** — L2: (αβ)ij＝加法で説明できないズレ、ゼロ和制約、SS分解。L3: 除去可能(非平行→変換で消える)vs質的交互作用、反復必須、有意なら主効果を単独解釈しない。
+**Iter.84 `doe/robust`** — L2: 誤差伝搬Var(y)≈∇yᵀΣ∇y、ピークでなくマージン最大、SN比。L3: モデル正しさ・境界の不確かさ・Σx見積り、ICH Q8の安全余裕。
+**Iter.85 `prep1/blocking-designs`** — L2: SS分解で乱塊法が誤差を縮める、分解能III/IV/V。L3: 疎性前提・別名を折り返しで解く・ブロック×処理交互作用、回数削減の等価交換。
+**Iter.86 `chemo/opls-da`** — L2: PLS-DAと数学的等価で回転して整理するだけ、予測力は不変。L3/L5: 「R²上昇＝過学習信号」、見た目は証拠でない、Q²・並べ替え・独立検証、S-plotと交絡漏れ。
+
+KaTeXエラー0・div balance OK・全内部リンク実在。verify-topics.js 86/86 PASS。
+
+---
+
+# ✅ 全86トピック 5層化 完了（2026-07-06）
+
+Iter.1〜86（ローカル＋クラウド並行）で、全86トピックが5層構成（L1直感/L2数式と導出/L3前提と崩れたときの影響/L4グラフ接続/L5有意性と実質的意味〔検定・推定・モデル系のみ〕）を充足。追加した数式・数値例はすべて python3 等で独立検算し、各トピックで node --check・verify-topics.js（構造・内部リンク・$$フェンス・quiz対応）・KaTeXレンダリング・デモ実行（新設分は境界値含む）を確認済み。GitHub Pages へ反映済み。
+
+**ファイル別完了**: math.js(6)・prob.js(9)・dists.js(3)・prep1.js/prep1b.js/estimation2.js/testing2.js/ml.js/mva.js/advanced.js/advanced2.js/doe.js/chemo.js の全トピック。
+
+**今後の保守メモ**: 新規トピックを足したら本ログのマトリクスに行を追加し、同じ5層基準・検算・verify-topics.js通過を満たすこと。デモを新設/変更したらブラウザで境界値まで実行確認。
