@@ -39,7 +39,7 @@
 | **prep1/multivariate-normal** | o | o | o | o | - | 0 | ✅Iter.45 |
 | **prep1/multiple-regression** | o | o | o | o | o | 0 | ✅Iter.10 |
 | **prep1/multiple-comparison** | o | o | o | o | o | 0 | ✅Iter.53 |
-| prep1/multicollinearity | o | d | d | d | x | 2.5 | |
+| **prep1/multicollinearity** | o | o | o | o | o | 0 | ✅Iter.67 |
 | prep1/monte-carlo | o | d | x | o | x | 2.5 | |
 | **prep1/moments-shape** | o | o | o | o | - | 0 | ✅Iter.35 |
 | **prep1/moment-method** | o | o | o | o | o | 0 | ✅Iter.18 |
@@ -54,7 +54,7 @@
 | **prep1/log-linear** | o | o | o | o | o | 0 | ✅Iter.23 |
 | **prep1/lln** | o | o | o | o | - | 0 | ✅Iter.41 |
 | **prep1/lda** | o | o | o | o | o | 0 | ✅Iter.7 |
-| prep1/kmeans | o | d | x | o | - | 1.5 | |
+| **prep1/kmeans** | o | o | o | o | - | 0 | ✅Iter.68 |
 | **prep1/joint-distribution** | o | o | o | o | - | 0 | ✅Iter.34 |
 | prep1/interaction | o | d | x | o | - | 1.5 | |
 | **prep1/goodness-of-fit** | o | o | o | o | o | 0 | ✅Iter.56 |
@@ -73,7 +73,7 @@
 | **prep1/contingency** | o | o | o | o | o | 0 | ✅Iter.30 |
 | **prep1/confidence** | o | o | o | o | o | 0 | ✅Iter.3で深掘り済 |
 | **prep1/conditional-bayes** | o | o | o | o | - | 0 | ✅Iter.38 |
-| prep1/clustering | o | x | x | d | - | 2.5 | |
+| **prep1/clustering** | o | o | o | o | - | 0 | ✅Iter.69 |
 | **prep1/clt** | o | o | o | o | o | 0 | ✅Iter.58 |
 | **prep1/bootstrap** | o | o | o | o | o | 0 | ✅Iter.17 |
 | prep1/blocking-designs | x | d | d | d | o | 2.5 | |
@@ -817,3 +817,14 @@ KaTeXエラー0・div balance OK・内部リンク（crossval, regularization, t
 
 **残り約20**: path-analysis, factor, arima, missing-data, markov-chain, survival(advanced.js), monte-carlo, blocking-designs, sampling-survey, odds-ratio(advanced2.js), kmeans, clustering, factor(mva.js), multicollinearity, interaction, principles(doe.js), rsm, rsm-error, d-optimal, robust(doe.js), opls-da(chemo.js)。
 **次**: `prep1/multicollinearity`(2.5)・`prep1/kmeans`(1.5)・`prep1/clustering`(2.5)。※着手前にクラウド進捗を再確認。
+
+## 2026-07-06 — Iter.67-69（多重共線性・k-means・階層クラスタ）
+
+**Iter.67 `prep1/multicollinearity`** — L2: Var(β̂j)=σ²/((1-Rj²)Σ..)＝VIF倍膨張、条件数と同根。L5: 予測は安定・解釈が壊れる、非有意の誤読、リッジ/PLS。検算: r=0.9→VIF5.3。
+**Iter.68 `prep1/kmeans`** — L2: 交互最小化でWCSS単調減少→局所最適収束。L3: 球状・等サイズ前提(→GMM/DBSCAN)、k選択(エルボー/シルエット)、スケール、k-means++、外れ値→k-medoids。
+**Iter.69 `prep1/clustering`** — L2: デンドログラム高さ=併合距離、切る高さでk後決め、ウォード=k-meansの階層版。L3: 距離・連結法依存(単連結チェイニング/完全連結)、標準化、k決まらない・O(n²)。
+
+KaTeXエラー0・div balance OK・内部リンク（math-ops, covariance-matrix, chemo/pls, regularization, kmeans）実在。verify-topics.js 86/86 PASS。
+
+**残り約17**: path-analysis, factor(mva.js), arima, markov-chain, survival(advanced.js), missing-data, monte-carlo, blocking-designs, sampling-survey, odds-ratio(advanced2.js), interaction, principles, rsm, rsm-error, d-optimal, robust(doe.js), opls-da(chemo.js)。
+**次**: `prep1/markov-chain`(2)・`prep1/arima`(2.5)・`prep1/survival`(2.5)（advanced.js）。※着手前にクラウド進捗を再確認。
