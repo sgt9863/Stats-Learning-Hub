@@ -23,7 +23,7 @@
 | **prep1/sample-size** | o | o | o | o | o | 0 | ✅Iter.54 |
 | **prep1/roc-auc** | o | o | o | o | - | 0 | ✅Iter.63 |
 | **prep1/regularization** | o | o | o | o | o | 0 | ✅Iter.21 |
-| prep1/regression-diagnostics | o | x | o | o | x | 2 | |
+| **prep1/regression-diagnostics** | o | o | o | o | o | 0 | ✅Iter.66 |
 | **prep1/random-variables** | o | o | o | o | - | 0 | ✅Iter.36 |
 | prep1/principles | d | x | x | o | o | 2.5 | |
 | **prep1/pca** | o | o | o | o | - | 0 | ✅Iter.6 |
@@ -43,7 +43,7 @@
 | prep1/monte-carlo | o | d | x | o | x | 2.5 | |
 | **prep1/moments-shape** | o | o | o | o | - | 0 | ✅Iter.35 |
 | **prep1/moment-method** | o | o | o | o | o | 0 | ✅Iter.18 |
-| prep1/model-selection | o | d | x | o | x | 2.5 | |
+| **prep1/model-selection** | o | o | o | o | o | 0 | ✅Iter.64 |
 | **prep1/mle** | o | o | o | o | o | 0 | ✅Iter.5 |
 | prep1/missing-data | o | x | d | o | x | 2.5 | |
 | **prep1/mgf** | o | o | o | o | - | 0 | ✅Iter.39 |
@@ -66,7 +66,7 @@
 | **prep1/estimator-properties** | o | o | o | o | o | 0 | ✅Iter.51 |
 | **prep1/distributions** | o | o | o | o | o | 0 | ✅Iter.8 |
 | **prep1/discrete-distributions** | o | o | o | o | - | 0 | ✅Iter.43 |
-| prep1/delta-method | o | d | x | o | x | 2.5 | |
+| **prep1/delta-method** | o | o | o | o | o | 0 | ✅Iter.65 |
 | **prep1/crossval** | o | o | o | o | o | 0 | ✅Iter.26 |
 | **prep1/correlation** | o | o | o | o | - | 0 | ✅Iter.59 |
 | **prep1/continuous-distributions** | o | o | o | o | - | 0 | ✅Iter.44 |
@@ -806,3 +806,14 @@ KaTeXエラー0・div balance OK・内部リンク（transformations, continuous
 KaTeXエラー0・div balance OK・内部リンク（estimator-properties, regularization, crossval, logistic, lda, roc-auc, nonparametric, conditional-bayes）実在。verify-topics.js 86/86 PASS。
 
 **次に深掘りすべきトピック**: `prep1/model-selection`(2.5, prep1b.js)・`prep1/delta-method`(2.5, prep1b.js)・`prep1/regression-diagnostics`(2, advanced.js)。※着手前にクラウド進捗を再確認。
+
+## 2026-07-06 — Iter.64-66（モデル選択・デルタ法・回帰診断）
+
+**Iter.64 `prep1/model-selection`** — L2: AIC=-2lnL+2k（KL情報量最小化）、BIC罰k·ln n（一致性）の違い。L3/L5: 差だけ見る・選択後推論の危険・ステップワイズ不安定→Lasso。検算: AIC2k vs BIC ln(n)k。
+**Iter.65 `prep1/delta-method`** — L2: 1次テイラー→Var(g)≈[g']²Var、多変数∇gᵀΣ∇g。L3: 曲率大/σ大で乖離(eθ実測2.69vs近似1.85)、g'≈0で2次、非対称→ブートストラップ。検算: g=θ² 0.369≒0.360。
+**Iter.66 `prep1/regression-diagnostics`** — L2: ハット行列H=X(XᵀX)⁻¹Xᵀ、h_ii=∂ŷ/∂y、Σh_ii=p、クックの距離D_i。L5: 診断はp値の前工程、外れ値の機械的除去禁止・感度分析。
+
+KaTeXエラー0・div balance OK・内部リンク（crossval, regularization, transformations, bootstrap, rsm-error）実在。verify-topics.js 86/86 PASS。
+
+**残り約20**: path-analysis, factor, arima, missing-data, markov-chain, survival(advanced.js), monte-carlo, blocking-designs, sampling-survey, odds-ratio(advanced2.js), kmeans, clustering, factor(mva.js), multicollinearity, interaction, principles(doe.js), rsm, rsm-error, d-optimal, robust(doe.js), opls-da(chemo.js)。
+**次**: `prep1/multicollinearity`(2.5)・`prep1/kmeans`(1.5)・`prep1/clustering`(2.5)。※着手前にクラウド進捗を再確認。
