@@ -24,7 +24,7 @@
 | prep1/roc-auc | o | x | x | o | - | 2 | |
 | **prep1/regularization** | o | o | o | o | o | 0 | ✅Iter.21 |
 | prep1/regression-diagnostics | o | x | o | o | x | 2 | |
-| prep1/random-variables | o | x | x | o | - | 2 | |
+| **prep1/random-variables** | o | o | o | o | - | 0 | ✅Iter.36 |
 | prep1/principles | d | x | x | o | o | 2.5 | |
 | **prep1/pca** | o | o | o | o | - | 0 | ✅Iter.6 |
 | prep1/path-analysis | o | d | d | d | x | 2.5 | |
@@ -41,7 +41,7 @@
 | prep1/multiple-comparison | o | d | x | o | o | 1.5 | |
 | prep1/multicollinearity | o | d | d | d | x | 2.5 | |
 | prep1/monte-carlo | o | d | x | o | x | 2.5 | |
-| prep1/moments-shape | o | x | x | d | - | 2.5 | |
+| **prep1/moments-shape** | o | o | o | o | - | 0 | ✅Iter.35 |
 | **prep1/moment-method** | o | o | o | o | o | 0 | ✅Iter.18 |
 | prep1/model-selection | o | d | x | o | x | 2.5 | |
 | **prep1/mle** | o | o | o | o | o | 0 | ✅Iter.5 |
@@ -55,7 +55,7 @@
 | prep1/lln | o | d | x | d | - | 2 | |
 | **prep1/lda** | o | o | o | o | o | 0 | ✅Iter.7 |
 | prep1/kmeans | o | d | x | o | - | 1.5 | |
-| prep1/joint-distribution | o | x | x | d | - | 2.5 | |
+| **prep1/joint-distribution** | o | o | o | o | - | 0 | ✅Iter.34 |
 | prep1/interaction | o | d | x | o | - | 1.5 | |
 | prep1/goodness-of-fit | o | d | x | o | x | 2.5 | |
 | **prep1/glm** | o | o | o | o | o | 0 | ✅Iter.12 |
@@ -619,3 +619,26 @@
 **運用メモ**: このセッション中にクラウドセッションが並行して Iter.20〜32（pls-da〜linearization）＋因果推論トピック＋デザインD3-D7 を main に反映済みだった。ローカルで先行着手した pls-da(Iter.20相当)はクラウドと重複のため破棄し、origin/main に同期のうえ本 Iter.33 を上乗せ。**以後クラウドと同時進行する場合はプッシュ直前に必ず `git fetch` で衝突確認すること**。
 
 **次に深掘りすべきトピック**: `prep1/estimator-properties`（gap 2.5・全推定論の入口）、`prep1/model-selection`（gap 2.5・AIC/BIC）、`prep1/monte-carlo`（gap 2.5）。※着手前に DEEPENING_LOG.md 最新版でクラウドの進捗を再確認すること。
+
+## 2026-07-06 — Iter.34-36（確率の基礎クラスタ・ローカル、クラウドと衝突回避のため確率基礎を担当）
+
+クラウドが計算・発展系を進めていたため、衝突しにくい「確率と確率変数」クラスタ（prob.js）を担当。3トピックとも L1・デモ(L4)は良好だったので L2（導出の「なぜ」）と L3（前提・崩れたときの注意）を追加（いずれも確率の定義系ゆえ L5 は非該当）。
+
+**Iter.34 `prep1/joint-distribution`（同時・周辺・条件付き分布）**
+- L2: 2次元標準正規で $x_0$ 断面を平方完成 → $Y|X{=}x_0\sim N(\rho x_0,\,1-\rho^2)$。条件付き平均＝回帰直線、条件付き分散 $1-\rho^2$＝$R^2$ で減る不確かさ、と回帰へ接続。
+- L3: 無相関≠独立。$X\sim N(0,1),Y=X^2$ は $\mathrm{Cov}=E[X^3]=0$ でも完全従属。「$\rho=0$→独立」は正規など特別な場合のみ、デモが2次元正規なのはその特別ケースだと明示。
+- 検算: $x_0{=}1,\rho{=}0.6$ で条件付き平均0.594(理論0.6)・分散0.652(理論0.64)、$\mathrm{Cov}(X,X^2)\approx0$。✅
+
+**Iter.35 `prep1/moments-shape`（モーメント・歪度・尖度・CV）**
+- L2: $\sigma^3,\sigma^4$ で割る＝無次元化(スケール不変)、尖度の $-3$ は正規の $\mu_4/\sigma^4=3$ を基準0にするため（超過尖度）。
+- L3: モーメント非存在（$t_3$は4次∞、コーシーは平均なし＝標本値が収束せず暴れる）、標本歪度・尖度の外れ値感受性と小標本の不安定、$CV$ は $\mu\approx0$ で爆発・比率尺度専用。
+- 検算: 標準正規 $\mu_4/\sigma^4=2.999$、$\gamma_2\approx0$。$t_3$ の4次モーメント発散。✅
+
+**Iter.36 `prep1/random-variables`（pmf/pdf/cdf/生存関数）**
+- L2: 連続で $P(X{=}x)=0$ ゆえ密度は確率でなく「単位長さあたりの確率」（$f>1$ もあり得る）、$S=1-F$、ハザード $h=f/S$。
+- L3: $F$ は任意の確率変数に存在するが $f$ は絶対連続のみ。混合型（点質量＋連続：降水量・打ち切り）は純粋な $f$ で書けず $F/S$ で扱う。裾が重く平均・分散がなくても $F,S$ は定義可能。
+- 検算: 数式のみ（定義の整理）。node --check・verify-topics.js パス。
+
+いずれも KaTeXエラー0・div balance 1/1・内部リンク（regression, survival, distributions）実在。verify-topics.js 86/86 PASS。
+
+**次に深掘りすべきトピック**: `prep1/events-probability`(1.5)・`prep1/conditional-bayes`(1.5)・`prep1/mgf`(1)（確率基礎の残り、同 prob.js）→ その後 `prep1/discrete-distributions`(2)・`prep1/continuous-distributions`(1.5)（dists.js）。※着手前にクラウド進捗を再確認。
