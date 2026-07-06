@@ -15,20 +15,20 @@
 | **prep1/timeseries** | o | o | o | o | o | 0 | ✅Iter.13 |
 | **prep1/three-tests** | o | o | o | o | o | 0 | ✅Iter.14 |
 | **prep1/testing** | o | o | o | o | o | 0 | ✅Iter.2で深掘り済 |
-| prep1/svm | o | d | d | o | x | 2 | |
+| **prep1/svm** | o | o | o | o | o | 0 | ✅Iter.62 |
 | prep1/survival | o | d | d | d | x | 2.5 | |
 | **prep1/sufficiency** | o | o | o | o | o | 0 | ✅Iter.16 |
 | **prep1/stochastic-process** | o | o | o | o | o | 0 | ✅Iter.22 |
 | prep1/sampling-survey | o | d | d | o | - | 1 | |
 | **prep1/sample-size** | o | o | o | o | o | 0 | ✅Iter.54 |
-| prep1/roc-auc | o | x | x | o | - | 2 | |
+| **prep1/roc-auc** | o | o | o | o | - | 0 | ✅Iter.63 |
 | **prep1/regularization** | o | o | o | o | o | 0 | ✅Iter.21 |
 | prep1/regression-diagnostics | o | x | o | o | x | 2 | |
 | **prep1/random-variables** | o | o | o | o | - | 0 | ✅Iter.36 |
 | prep1/principles | d | x | x | o | o | 2.5 | |
 | **prep1/pca** | o | o | o | o | - | 0 | ✅Iter.6 |
 | prep1/path-analysis | o | d | d | d | x | 2.5 | |
-| prep1/overfitting | o | d | x | o | x | 2.5 | |
+| **prep1/overfitting** | o | o | o | o | o | 0 | ✅Iter.61 |
 | **prep1/orthogonal** | o | o | o | o | o | 0 | ✅Iter.19 |
 | **prep1/order-statistics** | o | o | o | o | - | 0 | ✅Iter.60 |
 | prep1/odds-ratio | o | x | d | o | x | 2.5 | |
@@ -796,3 +796,13 @@ KaTeXエラー0・div balance OK・内部リンク（distributions, nonparametri
 KaTeXエラー0・div balance OK・内部リンク（transformations, continuous-distributions, vectors-matrices, regression, joint-distribution, survival）実在。verify-topics.js 86/86 PASS。
 
 **次に深掘りすべきトピック**: `prep1/overfitting`(2.5, ml.js)・`prep1/svm`(2, advanced2.js)・`prep1/roc-auc`(2, advanced2.js)。※着手前にクラウド進捗を再確認。
+
+## 2026-07-06 — Iter.61-63（過学習・SVM・ROC/AUC）
+
+**Iter.61 `prep1/overfitting`** — L2: バイアス・バリアンス分解の導出（MSE分解の予測版）。L3/L5: 訓練誤差≠汎化、同分布前提（分布シフト）、複雑さ/nの比、二重降下に言及。
+**Iter.62 `prep1/svm`** — L2: マージン2/‖w‖の導出、双対でw=Σαyx・サポートベクターのみα>0、カーネルトリック。L3: C・γ・スケール・不均衡の表、ロジスティック/LDAとの使い分け。
+**Iter.63 `prep1/roc-auc`** — L2: AUC=P(スコア陽>陰)（マンホイットニー、検算0.855≒Φ(d/√2)0.856）、判別としきい値を分離。L3: 不均衡でROC楽観的→PR曲線、部分AUC・交差・キャリブレーション。
+
+KaTeXエラー0・div balance OK・内部リンク（estimator-properties, regularization, crossval, logistic, lda, roc-auc, nonparametric, conditional-bayes）実在。verify-topics.js 86/86 PASS。
+
+**次に深掘りすべきトピック**: `prep1/model-selection`(2.5, prep1b.js)・`prep1/delta-method`(2.5, prep1b.js)・`prep1/regression-diagnostics`(2, advanced.js)。※着手前にクラウド進捗を再確認。
