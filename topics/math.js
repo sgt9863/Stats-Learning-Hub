@@ -19,6 +19,10 @@
 <p>$$ X=\\begin{pmatrix} x_{11} & \\cdots & x_{1p}\\\\ \\vdots & & \\vdots \\\\ x_{n1} & \\cdots & x_{np}\\end{pmatrix} \\quad\\begin{array}{l}\\leftarrow \\text{1行 = 1個体}\\\\[2pt] \\uparrow \\text{1列 = 1変数}\\end{array} $$</p>
 <h3>行列は「空間を変形する規則」でもある</h3>
 <p>行列にはもう1つの顔があります。ベクトルに行列を掛けると、そのベクトルは<strong>回転・拡大・せん断</strong>され、別のベクトルに移ります。$2\\times2$ 行列 $A$ をかける操作は、平面全体をゆがめる「変換」です。主成分分析やPLSは、結局この「空間の変形」を読み解く話に行き着きます。</p>
+<h3>「掛け算」は内積＝重み付き和</h3>
+<p>行列とベクトルの積 $A\\boldsymbol x$ の各成分は、$A$ の行とベクトルの<strong>内積</strong>です。統計で最も使うのがこれ——係数ベクトル $\\boldsymbol\\beta$ とデータ行 $\\boldsymbol x_i$ の内積 $\\boldsymbol x_i^\\top\\boldsymbol\\beta=\\beta_1 x_{i1}+\\cdots+\\beta_p x_{ip}$ が<a href="#/prep1/multiple-regression">重回帰</a>の予測値、$X\\boldsymbol\\beta$ で全員分の予測が一気に出ます。長さ $\\|\\boldsymbol x\\|=\\sqrt{\\boldsymbol x^\\top\\boldsymbol x}$、2ベクトルのなす角の余弦 $\\cos\\theta=\\frac{\\boldsymbol x^\\top\\boldsymbol y}{\\|\\boldsymbol x\\|\\,\\|\\boldsymbol y\\|}$——これは中心化すれば<strong>そのまま<a href="#/prep1/correlation">相関係数</a></strong>です。「行列＝データ表」「積＝重み付き和」「内積＝相関・射影」の3点を押さえると、後の統計がすべて線形代数の言葉で読めます。</p>
+<h3>前提と、崩れたときの注意</h3>
+<p>この表現は<strong>数値データ</strong>にしか使えません。カテゴリ変数（血液型・地域）はそのまま行列に入れられず、<strong>ダミー変数（ワンホット符号化）</strong>で0/1に開く必要があります。また、行列は「線形」な操作しか表せません——変数どうしの積や2乗のような<strong>非線形</strong>な効果を入れたいなら、あらかじめ交互作用項・多項式項を列として<em>作って</em>おく必要があります（作ってしまえば、モデル自体は係数について線形なまま扱えます）。さらに、内積は各変数のスケールに引きずられるので、単位のばらばらな変数を混ぜるときは<strong>標準化</strong>してから行列演算に載せるのが安全です（距離・PCAで特に重要）。</p>
 <div class="note">下で行列 $A=\\begin{pmatrix}a&b\\\\c&d\\end{pmatrix}$ の4つの数を動かすと、青い単位の正方形（と円）が $A$ によってどう変形するかが見えます。行列＝図形を動かす規則、という感覚をつかんでください。</div>`,
     demo: {
       note: 'a,d は各軸の拡大率、b,c はせん断（斜めのゆがみ）。行列式 det=ad−bc は「面積が何倍になるか」。det=0 だと平面が1本の線につぶれ、情報が失われます（逆行列が作れない状態）。',
@@ -119,7 +123,11 @@
 <p>「変換 $A$ の“芯”になっている軸」が固有ベクトル、「その軸方向にどれだけ引き伸ばすか」が固有値、というイメージです。</p>
 <h3>なぜ統計で重要か</h3>
 <p>データの<a href="#/math/covariance-matrix">分散共分散行列</a>の固有ベクトルは「データが最もばらつく方向」を、固有値は「その方向の分散の大きさ」を表します。これがそのまま<a href="#/prep1/pca">主成分分析（PCA）</a>です。対称行列（共分散行列はいつも対称）の固有ベクトルは互いに直交する、という性質も効いてきます。</p>
-<div class="note">下で対称行列 $A=\\begin{pmatrix}a&b\\\\b&c\\end{pmatrix}$ を動かすと、青い単位円が楕円に変形します。灰色の任意ベクトルは向きが変わりますが、<strong>赤・緑の固有ベクトルだけは変換後も同じ直線上</strong>にとどまり、長さが固有値倍になります。これが「変換の主軸」です。</div>`,
+<h3>どう求めるか（特性方程式）</h3>
+<p>$A\\boldsymbol v=\\lambda\\boldsymbol v$ を移項すると $(A-\\lambda I)\\boldsymbol v=\\boldsymbol 0$。$\\boldsymbol v\\ne\\boldsymbol 0$ の解を持つには $A-\\lambda I$ が潰れている（<a href="#/math/matrix-ops">逆行列を持たない</a>）必要があり、条件は<strong>特性方程式</strong> $\\det(A-\\lambda I)=0$。$2\\times2$ なら $\\lambda^2-(\\mathrm{tr}A)\\lambda+\\det A=0$ の2次方程式で、<strong>固有値の和＝トレース、積＝行列式</strong>という便利な関係が出ます。各 $\\lambda$ を戻して $(A-\\lambda I)\\boldsymbol v=\\boldsymbol 0$ を解けば固有ベクトルです。</p>
+<h3>前提と、崩れたときの注意</h3>
+<p>一般の（非対称な）行列では固有値が<strong>複素数</strong>になったり（回転を含む変換）、固有ベクトルが直交しなかったり、そもそも対角化できない（固有ベクトルが足りない）ことがあります。ところが統計で主に扱う<strong>分散共分散行列・相関行列・$X^\\top X$ はすべて対称</strong>で、対称行列には<strong>スペクトル定理</strong>が効きます——固有値は必ず実数、固有ベクトルは互いに直交、必ず $A=V\\Lambda V^\\top$ と直交行列で対角化できる。PCAで「主成分どうしが直交する」「分散（固有値）が実数で解釈できる」のはこの定理のおかげです。さらに共分散行列は<a href="#/math/covariance-matrix">半正定値</a>なので固有値は0以上（＝分散だから当然）。固有値に0が出たら、その方向にデータが広がっていない＝<a href="#/prep1/multicollinearity">共線性</a>のサインです。</p>
+<div class="note">下で対称行列 $A=\\begin{pmatrix}a&b\\\\b&c\\end{pmatrix}$ を動かすと、青い単位円が楕円に変形します。灰色の任意ベクトルは向きが変わりますが、<strong>赤・緑の固有ベクトルだけは変換後も同じ直線上</strong>にとどまり、長さが固有値倍になります。対称行列なので赤・緑は常に直交します（スペクトル定理）。これが「変換の主軸」です。</div>`,
     demo: {
       note: '赤・緑の矢印（固有ベクトル）は、行列をかけても同じ直線上に伸縮するだけ。楕円の長軸・短軸の向きと一致します。固有値が楕円の半径になります。',
       controls: [

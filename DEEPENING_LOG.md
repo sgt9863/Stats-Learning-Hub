@@ -63,7 +63,7 @@
 | **prep1/fisher-cramer-rao** | o | o | o | o | o | 0 | ✅Iter.24 |
 | prep1/factor | o | d | d | d | x | 2.5 | |
 | **prep1/events-probability** | o | o | o | o | - | 0 | ✅Iter.37 |
-| prep1/estimator-properties | o | d | x | o | x | 2.5 | |
+| **prep1/estimator-properties** | o | o | o | o | o | 0 | ✅Iter.51 |
 | **prep1/distributions** | o | o | o | o | o | 0 | ✅Iter.8 |
 | **prep1/discrete-distributions** | o | o | o | o | - | 0 | ✅Iter.43 |
 | prep1/delta-method | o | d | x | o | x | 2.5 | |
@@ -81,11 +81,11 @@
 | prep1/arima | o | x | d | o | x | 2.5 | |
 | **prep1/anova1** | o | o | o | o | o | 0 | ✅Iter.4で深掘り済 |
 | **prep1/acf-pacf** | o | o | o | o | o | 0 | ✅Iter.25 |
-| math/vectors-matrices | d | d | x | o | - | 2 | |
+| **math/vectors-matrices** | o | o | o | o | - | 0 | ✅Iter.49 |
 | **math/matrix-ops** | o | o | o | o | - | 0 | ✅Iter.46 |
 | **math/linearization** | o | o | o | o | o | 0 | ✅Iter.31 |
 | **math/gradient** | o | o | o | o | - | 0 | ✅Iter.48 |
-| math/eigen | o | o | x | o | - | 1 | |
+| **math/eigen** | o | o | o | o | - | 0 | ✅Iter.50 |
 | **math/covariance-matrix** | o | o | o | o | - | 0 | ✅Iter.47 |
 | doe/rsm-error | o | d | d | d | x | 2.5 | |
 | doe/rsm | o | o | x | d | x | 2.5 | |
@@ -727,3 +727,23 @@ KaTeXエラー0・div balance OK・内部リンク（eigen, pca, regularization,
 
 **残り（math）**: `math/vectors-matrices`(gap2)・`math/eigen`(gap1)。次バッチで math を完結予定。
 **次に深掘りすべきトピック**: `math/vectors-matrices`(2)・`math/eigen`(1) → prep1 の推定・検定の残り（estimator-properties, model-selection, neyman-pearson, multiple-comparison, nonparametric, sample-size 等）。※着手前にクラウド進捗を再確認。
+
+## 2026-07-06 — Iter.49-51（math完結＋推定量の性質）
+
+**Iter.49 `math/vectors-matrices`（ベクトルと行列でデータを表す）**
+- L2: 積の各成分＝内積＝重み付き和（回帰予測 $\boldsymbol x^\top\boldsymbol\beta$）、cosθ＝中心化で相関。
+- L3: 数値データのみ（カテゴリはダミー化）、線形のみ（交互作用・多項式は列を作る）、スケール差は標準化。
+
+**Iter.50 `math/eigen`（固有値・固有ベクトル）**
+- L2: 特性方程式 $\det(A-\lambda I)=0$、固有値の和＝トレース・積＝行列式。
+- L3: 非対称は複素固有値・非直交・対角化不能もあるが、統計の対称行列はスペクトル定理（実固有値・直交・$V\Lambda V^\top$）。半正定値で固有値≥0、0は共線性。
+
+**Iter.51 `prep1/estimator-properties`（不偏・一致・有効）**
+- L2: MSE分解の導出（交差項消去でバイアス²＋分散）。
+- L3: 4性質は独立で両立せず（不偏だが不一致＝x₁のみ／偏るが一致＝MLE）、不偏推定量が存在しない例。
+- L5: 不偏≠最良——正規分散でMSEは ÷(n-1)不偏0.222 > ÷n 0.191 > ÷(n+1) 0.181。リッジ・ベイズの「偏らせて安定」。
+- 検算: 上記MSE数値（reps=20万）。✅
+
+KaTeXエラー0・div balance OK。verify-topics.js 86/86 PASS。**math.js（数学の基礎6トピック）全完了**（vectors-matrices, matrix-ops, eigen, covariance-matrix, gradient, linearization）。
+
+**次に深掘りすべきトピック**: prep1 推定・検定の残り——`prep1/model-selection`(2.5)・`prep1/neyman-pearson`(1.5)・`prep1/multiple-comparison`(1.5)・`prep1/nonparametric`(1.5)・`prep1/sample-size`(1.5)・`prep1/goodness-of-fit`(2.5)・`prep1/normal-tests`(2.5)・`prep1/delta-method`(2.5)。※着手前にクラウド進捗を再確認。
