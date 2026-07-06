@@ -405,6 +405,12 @@ a { color: var(--accent); }
 
 .body p { margin: 0.75em 0; }
 
+/* 本文リストのリズム: 既定の 40px インデントを詰めて段落と揃え、
+   多行項目が続かないよう項目間に余白、マーカーは無彩色で控えめに */
+.body ul, .body ol { margin: 0.75em 0; padding-left: 1.5em; }
+.body li { margin: 0.3em 0; }
+.body li::marker { color: var(--muted-2); }
+
 .body .katex-display {
   overflow-x: auto;
   overflow-y: hidden;
