@@ -46,7 +46,7 @@
 | prep1/model-selection | o | d | x | o | x | 2.5 | |
 | **prep1/mle** | o | o | o | o | o | 0 | ✅Iter.5 |
 | prep1/missing-data | o | x | d | o | x | 2.5 | |
-| prep1/mgf | o | o | x | o | - | 1 | |
+| **prep1/mgf** | o | o | o | o | - | 0 | ✅Iter.39 |
 | **prep1/mds-ca** | o | o | o | o | o | 0 | ✅Iter.15 |
 | **prep1/mcmc** | o | o | o | o | - | 0 | ✅Iter.27 |
 | prep1/markov-chain | o | d | x | d | - | 2 | |
@@ -62,7 +62,7 @@
 | **prep1/gauss-markov** | o | o | o | o | o | 0 | ✅Iter.33 |
 | **prep1/fisher-cramer-rao** | o | o | o | o | o | 0 | ✅Iter.24 |
 | prep1/factor | o | d | d | d | x | 2.5 | |
-| prep1/events-probability | o | d | x | o | - | 1.5 | |
+| **prep1/events-probability** | o | o | o | o | - | 0 | ✅Iter.37 |
 | prep1/estimator-properties | o | d | x | o | x | 2.5 | |
 | **prep1/distributions** | o | o | o | o | o | 0 | ✅Iter.8 |
 | prep1/discrete-distributions | o | x | x | o | - | 2 | |
@@ -72,7 +72,7 @@
 | prep1/continuous-distributions | o | x | d | o | - | 1.5 | |
 | **prep1/contingency** | o | o | o | o | o | 0 | ✅Iter.30 |
 | **prep1/confidence** | o | o | o | o | o | 0 | ✅Iter.3で深掘り済 |
-| prep1/conditional-bayes | o | d | x | o | - | 1.5 | |
+| **prep1/conditional-bayes** | o | o | o | o | - | 0 | ✅Iter.38 |
 | prep1/clustering | o | x | x | d | - | 2.5 | |
 | prep1/clt | o | d | x | o | x | 2.5 | |
 | **prep1/bootstrap** | o | o | o | o | o | 0 | ✅Iter.17 |
@@ -642,3 +642,26 @@
 いずれも KaTeXエラー0・div balance 1/1・内部リンク（regression, survival, distributions）実在。verify-topics.js 86/86 PASS。
 
 **次に深掘りすべきトピック**: `prep1/events-probability`(1.5)・`prep1/conditional-bayes`(1.5)・`prep1/mgf`(1)（確率基礎の残り、同 prob.js）→ その後 `prep1/discrete-distributions`(2)・`prep1/continuous-distributions`(1.5)（dists.js）。※着手前にクラウド進捗を再確認。
+
+## 2026-07-06 — Iter.37-39（確率基礎クラスタ・続き）
+
+prob.js の残り確率基礎3件に主に L3（前提・落とし穴）を追加。L5 は定義系ゆえ非該当。
+
+**Iter.37 `prep1/events-probability`（事象と確率・包除原理）**
+- L3新規: 排反≠独立（排反は強い依存で $P>0$ なら独立になれない）、対独立≠相互独立（$X,Y$独立コイン・$Z=X\oplus Y$）、条件付きで独立性が変わる。独立は図の重なりでなく式で判定。
+- 検算: 対独立 P(X,Z)=0.249=P(X)P(Z)、相互 P(X,Y,Z)=0 vs 0.124。✅
+
+**Iter.38 `prep1/conditional-bayes`（条件付き確率・ベイズ）**
+- L2強化: 事後オッズ＝事前オッズ×尤度比。有病率1%（1:99）×LR19→事後16%で基準率錯誤を一撃表現。
+- L3新規: 感度特異度の一定性（スペクトラムバイアス）、参照クラスの取り違え、繰り返し検査の条件付き独立崩れ、検察官の誤謬 $P(D|H)\ne P(H|D)$。
+- 検算: PPV=感度·有病率/[…]=16%（オッズ計算と一致）。✅
+
+**Iter.39 `prep1/mgf`（モーメント母関数・確率母関数）**
+- L3新規: MGFは0の近傍で存在しないと使えない（対数正規は $t>0$ で発散、t/コーシーも無し）。特性関数 $\varphi(t)=E[e^{itX}]$ は $|e^{itX}|=1$ で常に存在。一意性定理もMGF存在が前提。使い分け。
+- 検算: 対数正規 $E[e^{0.5X}]$ 標本平均が $10^{27}$ 規模に発散＝MGF非存在。✅
+
+いずれも KaTeXエラー0・div balance 1/1。verify-topics.js 86/86 PASS。
+
+**確率基礎クラスタ完了状況**: prob.js の残りは transformations(gap1)・lln(gap2)・normal-approx(gap1.5)。次はそれら or dists.js（discrete/continuous-distributions）。
+
+**次に深掘りすべきトピック**: `prep1/lln`(2)・`prep1/normal-approx`(1.5)・`prep1/transformations`(1)（prob.js完結）→ `prep1/discrete-distributions`(2)・`prep1/continuous-distributions`(1.5)（dists.js）。※着手前にクラウド進捗を再確認。
