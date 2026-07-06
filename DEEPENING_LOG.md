@@ -20,7 +20,7 @@
 | **prep1/sufficiency** | o | o | o | o | o | 0 | ✅Iter.16 |
 | **prep1/stochastic-process** | o | o | o | o | o | 0 | ✅Iter.22 |
 | prep1/sampling-survey | o | d | d | o | - | 1 | |
-| prep1/sample-size | o | d | x | o | o | 1.5 | |
+| **prep1/sample-size** | o | o | o | o | o | 0 | ✅Iter.54 |
 | prep1/roc-auc | o | x | x | o | - | 2 | |
 | **prep1/regularization** | o | o | o | o | o | 0 | ✅Iter.21 |
 | prep1/regression-diagnostics | o | x | o | o | x | 2 | |
@@ -35,10 +35,10 @@
 | prep1/normal-tests | o | x | o | d | x | 2.5 | |
 | **prep1/normal-approx** | o | o | o | o | - | 0 | ✅Iter.42 |
 | prep1/nonparametric | o | d | o | o | x | 1.5 | |
-| prep1/neyman-pearson | o | d | x | o | o | 1.5 | |
+| **prep1/neyman-pearson** | o | o | o | o | o | 0 | ✅Iter.52 |
 | **prep1/multivariate-normal** | o | o | o | o | - | 0 | ✅Iter.45 |
 | **prep1/multiple-regression** | o | o | o | o | o | 0 | ✅Iter.10 |
-| prep1/multiple-comparison | o | d | x | o | o | 1.5 | |
+| **prep1/multiple-comparison** | o | o | o | o | o | 0 | ✅Iter.53 |
 | prep1/multicollinearity | o | d | d | d | x | 2.5 | |
 | prep1/monte-carlo | o | d | x | o | x | 2.5 | |
 | **prep1/moments-shape** | o | o | o | o | - | 0 | ✅Iter.35 |
@@ -747,3 +747,22 @@ KaTeXエラー0・div balance OK・内部リンク（eigen, pca, regularization,
 KaTeXエラー0・div balance OK。verify-topics.js 86/86 PASS。**math.js（数学の基礎6トピック）全完了**（vectors-matrices, matrix-ops, eigen, covariance-matrix, gradient, linearization）。
 
 **次に深掘りすべきトピック**: prep1 推定・検定の残り——`prep1/model-selection`(2.5)・`prep1/neyman-pearson`(1.5)・`prep1/multiple-comparison`(1.5)・`prep1/nonparametric`(1.5)・`prep1/sample-size`(1.5)・`prep1/goodness-of-fit`(2.5)・`prep1/normal-tests`(2.5)・`prep1/delta-method`(2.5)。※着手前にクラウド進捗を再確認。
+
+## 2026-07-06 — Iter.52-54（検定論・testing2.js）
+
+**Iter.52 `prep1/neyman-pearson`**
+- L2: 尤度比で切る最適性の直感（α予算あたりの検出力の稼ぎ＝尤度比が大きい順の貪欲法）。
+- L3: 厳密は単純vs単純のみ、複合はUMP不在（片側は指数型+単調尤度比で存在、両側は不在→尤度比検定で代用）、モデル誤特定で保証喪失。
+
+**Iter.53 `prep1/multiple-comparison`**
+- L3: FWER式は独立仮定（正相関で真値は小さめ＝独立が最悪ケース）、ボンフェローニは独立不要だが保守的。手法選択表（ボンフェローニ/ホルム/テューキー/FDR）、FWER vs FDRは守る対象が違う。
+- 検算: m=20,α=5%でFWER=64%。✅
+
+**Iter.54 `prep1/sample-size`**
+- L2: 式の導出（$d\sqrt n=z_{1-α/2}+z_{1-β}$、シグナルvs余裕）。
+- L3: σ既知・正規・1標本の前提（実務はt）、d決め打ちの脆さ（$n\propto1/d^2$）、事後検出力は無意味→事前分析、dを振った表で示す。
+- 検算: d=0.5→n≈31, d=0.25→n≈126（4倍）。✅
+
+KaTeXエラー0・div balance OK・内部リンク（three-tests, normal-approx）実在。verify-topics.js 86/86 PASS。
+
+**次に深掘りすべきトピック**: `prep1/normal-tests`(2.5)・`prep1/goodness-of-fit`(2.5)（testing2.js残り）→ `prep1/nonparametric`(1.5)・`prep1/model-selection`(2.5)・`prep1/delta-method`(2.5)（prep1b.js）。※着手前にクラウド進捗を再確認。
