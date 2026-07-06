@@ -16,7 +16,7 @@
 | **prep1/three-tests** | o | o | o | o | o | 0 | ✅Iter.14 |
 | **prep1/testing** | o | o | o | o | o | 0 | ✅Iter.2で深掘り済 |
 | **prep1/svm** | o | o | o | o | o | 0 | ✅Iter.62 |
-| prep1/survival | o | d | d | d | x | 2.5 | |
+| **prep1/survival** | o | o | o | o | o | 0 | ✅Iter.72 |
 | **prep1/sufficiency** | o | o | o | o | o | 0 | ✅Iter.16 |
 | **prep1/stochastic-process** | o | o | o | o | o | 0 | ✅Iter.22 |
 | prep1/sampling-survey | o | d | d | o | - | 1 | |
@@ -49,7 +49,7 @@
 | **prep1/mgf** | o | o | o | o | - | 0 | ✅Iter.39 |
 | **prep1/mds-ca** | o | o | o | o | o | 0 | ✅Iter.15 |
 | **prep1/mcmc** | o | o | o | o | - | 0 | ✅Iter.27 |
-| prep1/markov-chain | o | d | x | d | - | 2 | |
+| **prep1/markov-chain** | o | o | o | o | - | 0 | ✅Iter.70 |
 | **prep1/logistic** | o | o | o | o | o | 0 | ✅Iter.9 |
 | **prep1/log-linear** | o | o | o | o | o | 0 | ✅Iter.23 |
 | **prep1/lln** | o | o | o | o | - | 0 | ✅Iter.41 |
@@ -78,7 +78,7 @@
 | **prep1/bootstrap** | o | o | o | o | o | 0 | ✅Iter.17 |
 | prep1/blocking-designs | x | d | d | d | o | 2.5 | |
 | **prep1/bayes** | o | o | o | o | o | 0 | ✅Iter.11 |
-| prep1/arima | o | x | d | o | x | 2.5 | |
+| **prep1/arima** | o | o | o | o | o | 0 | ✅Iter.71 |
 | **prep1/anova1** | o | o | o | o | o | 0 | ✅Iter.4で深掘り済 |
 | **prep1/acf-pacf** | o | o | o | o | o | 0 | ✅Iter.25 |
 | **math/vectors-matrices** | o | o | o | o | - | 0 | ✅Iter.49 |
@@ -828,3 +828,14 @@ KaTeXエラー0・div balance OK・内部リンク（math-ops, covariance-matrix
 
 **残り約17**: path-analysis, factor(mva.js), arima, markov-chain, survival(advanced.js), missing-data, monte-carlo, blocking-designs, sampling-survey, odds-ratio(advanced2.js), interaction, principles, rsm, rsm-error, d-optimal, robust(doe.js), opls-da(chemo.js)。
 **次**: `prep1/markov-chain`(2)・`prep1/arima`(2.5)・`prep1/survival`(2.5)（advanced.js）。※着手前にクラウド進捗を再確認。
+
+## 2026-07-06 — Iter.70-72（マルコフ連鎖・ARIMA・生存解析）
+
+**Iter.70 `prep1/markov-chain`** — L2: π*=固有値1の左固有ベクトル、スペクトルギャップで収束速度、2状態解析解(0.667,0.333)。L3: 吸収状態・周期性で収束せず、高次依存、MCMCの基盤。検算: π*P=π*反復一致。
+**Iter.71 `prep1/arima`** — L2: 後退作用素・特性根|z|>1が定常条件(AR(1)は1/φ)、反転可能性。L3: 過剰階差・GARCH・SARIMA・見せかけ回帰、Ljung-Box。検算: φ=0.7根1.43定常/φ=1単位根。
+**Iter.72 `prep1/survival`** — L2: S=exp(-∫h)、KM積極限∏(1-d/n)の打ち切り処理、部分尤度。L3: 無情報打ち切り・比例ハザード性(Schoenfeld)、ハザード比は相対量。
+
+KaTeXエラー0・div balance OK・内部リンク（eigen, mcmc, timeseries, acf-pacf）実在。verify-topics.js 86/86 PASS。
+
+**残り約14**: path-analysis, factor(mva.js), missing-data, monte-carlo, blocking-designs, sampling-survey, odds-ratio(advanced2.js), interaction, principles, rsm, rsm-error, d-optimal, robust(doe.js), opls-da(chemo.js)。
+**次**: `prep1/monte-carlo`(2.5)・`prep1/odds-ratio`(2.5)・`prep1/missing-data`(2.5)（advanced2.js）。※着手前にクラウド進捗を再確認。
