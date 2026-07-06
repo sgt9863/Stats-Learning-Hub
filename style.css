@@ -127,9 +127,10 @@ a { color: var(--accent); }
 #sidebar a:hover { background: var(--hover); color: var(--ink); }
 
 #sidebar a.active {
-  background: var(--accent);
-  color: #fff;
-  font-weight: 600;
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 700;
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 
 #sidebar .nav-home { font-weight: 700; margin-bottom: 10px; }
@@ -369,8 +370,8 @@ a { color: var(--accent); }
   color: var(--muted);
   font-size: 15.5px;
   margin: 0 0 20px;
-  border-bottom: 2px solid var(--ink);
-  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line-strong);
+  padding-bottom: 16px;
 }
 
 /* 本文プロースの読み幅を制御（1行の字数を抑えて可読性を上げる）。
@@ -725,7 +726,7 @@ table.simple th {
 }
 
 .pager .pg:hover {
-  border-color: var(--ink);
+  border-color: var(--accent);
   transform: translateY(-2px);
 }
 
