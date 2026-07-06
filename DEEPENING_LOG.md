@@ -19,7 +19,7 @@
 | **prep1/survival** | o | o | o | o | o | 0 | ✅Iter.72 |
 | **prep1/sufficiency** | o | o | o | o | o | 0 | ✅Iter.16 |
 | **prep1/stochastic-process** | o | o | o | o | o | 0 | ✅Iter.22 |
-| prep1/sampling-survey | o | d | d | o | - | 1 | |
+| **prep1/sampling-survey** | o | o | o | o | - | 0 | ✅Iter.78 |
 | **prep1/sample-size** | o | o | o | o | o | 0 | ✅Iter.54 |
 | **prep1/roc-auc** | o | o | o | o | - | 0 | ✅Iter.63 |
 | **prep1/regularization** | o | o | o | o | o | 0 | ✅Iter.21 |
@@ -27,7 +27,7 @@
 | **prep1/random-variables** | o | o | o | o | - | 0 | ✅Iter.36 |
 | prep1/principles | d | x | x | o | o | 2.5 | |
 | **prep1/pca** | o | o | o | o | - | 0 | ✅Iter.6 |
-| prep1/path-analysis | o | d | d | d | x | 2.5 | |
+| **prep1/path-analysis** | o | o | o | o | o | 0 | ✅Iter.77 |
 | **prep1/overfitting** | o | o | o | o | o | 0 | ✅Iter.61 |
 | **prep1/orthogonal** | o | o | o | o | o | 0 | ✅Iter.19 |
 | **prep1/order-statistics** | o | o | o | o | - | 0 | ✅Iter.60 |
@@ -61,7 +61,7 @@
 | **prep1/glm** | o | o | o | o | o | 0 | ✅Iter.12 |
 | **prep1/gauss-markov** | o | o | o | o | o | 0 | ✅Iter.33 |
 | **prep1/fisher-cramer-rao** | o | o | o | o | o | 0 | ✅Iter.24 |
-| prep1/factor | o | d | d | d | x | 2.5 | |
+| **prep1/factor** | o | o | o | o | o | 0 | ✅Iter.76 |
 | **prep1/events-probability** | o | o | o | o | - | 0 | ✅Iter.37 |
 | **prep1/estimator-properties** | o | o | o | o | o | 0 | ✅Iter.51 |
 | **prep1/distributions** | o | o | o | o | o | 0 | ✅Iter.8 |
@@ -850,3 +850,14 @@ KaTeXエラー0・div balance OK・内部リンク（sampling-survey, causal-inf
 
 **残り約11**: path-analysis, factor(mva.js), blocking-designs, sampling-survey(advanced2.js), interaction, principles, rsm, rsm-error, d-optimal, robust(doe.js), opls-da(chemo.js)。
 **次**: `prep1/factor`(2.5, mva.js)・`prep1/path-analysis`(2.5)・`prep1/sampling-survey`(1)（advanced2.js）。※着手前にクラウド進捗を再確認。
+
+## 2026-07-06 — Iter.76-78（因子分析・パス解析・標本調査）
+
+**Iter.76 `prep1/factor`** — L2: Σ=ΛΛᵀ+Ψ、共通性h²、PCAは全分散/因子分析は共有相関のみ。L3: 回転不定・因子数・多変量正規・ヘイウッドケース、探索的→CFA。
+**Iter.77 `prep1/path-analysis`** — L2: S≈Σ(θ)最小化、間接効果=積(a·b)、適合度χ²/RMSEA。L5: 因果の向きは仮定であって検証でない・等価モデル・識別性・未観測交絡。検算: a0.5·b0.6=0.3総合0.5。
+**Iter.78 `prep1/sampling-survey`** — L2: 非復元の負相関でFPC、精度はNでなくnで決まる。L3: 層化/クラスターのトレードオフ(deff)、非標本誤差(無回答/カバレッジ)は増標本で縮まない。検算: N100/50→0.505, N1万/50→0.995。
+
+KaTeXエラー0・div balance OK・内部リンク（pca, path-analysis, multiple-regression, causal-inference）実在。verify-topics.js 86/86 PASS。
+
+**残り約8**: blocking-designs(advanced2.js), interaction, principles, rsm, rsm-error, d-optimal, robust(doe.js), opls-da(chemo.js)。
+**次**: DoEクラスタ `doe/rsm`(2.5)・`doe/rsm-error`(2.5)・`doe/d-optimal`(2)。※着手前にクラウド進捗を再確認。
