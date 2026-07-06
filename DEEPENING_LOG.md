@@ -30,7 +30,7 @@
 | prep1/path-analysis | o | d | d | d | x | 2.5 | |
 | prep1/overfitting | o | d | x | o | x | 2.5 | |
 | **prep1/orthogonal** | o | o | o | o | o | 0 | ✅Iter.19 |
-| prep1/order-statistics | o | o | x | d | - | 1.5 | |
+| **prep1/order-statistics** | o | o | o | o | - | 0 | ✅Iter.60 |
 | prep1/odds-ratio | o | x | d | o | x | 2.5 | |
 | **prep1/normal-tests** | o | o | o | o | o | 0 | ✅Iter.55 |
 | **prep1/normal-approx** | o | o | o | o | - | 0 | ✅Iter.42 |
@@ -68,13 +68,13 @@
 | **prep1/discrete-distributions** | o | o | o | o | - | 0 | ✅Iter.43 |
 | prep1/delta-method | o | d | x | o | x | 2.5 | |
 | **prep1/crossval** | o | o | o | o | o | 0 | ✅Iter.26 |
-| prep1/correlation | o | d | d | o | - | 1 | |
+| **prep1/correlation** | o | o | o | o | - | 0 | ✅Iter.59 |
 | **prep1/continuous-distributions** | o | o | o | o | - | 0 | ✅Iter.44 |
 | **prep1/contingency** | o | o | o | o | o | 0 | ✅Iter.30 |
 | **prep1/confidence** | o | o | o | o | o | 0 | ✅Iter.3で深掘り済 |
 | **prep1/conditional-bayes** | o | o | o | o | - | 0 | ✅Iter.38 |
 | prep1/clustering | o | x | x | d | - | 2.5 | |
-| prep1/clt | o | d | x | o | x | 2.5 | |
+| **prep1/clt** | o | o | o | o | o | 0 | ✅Iter.58 |
 | **prep1/bootstrap** | o | o | o | o | o | 0 | ✅Iter.17 |
 | prep1/blocking-designs | x | d | d | d | o | 2.5 | |
 | **prep1/bayes** | o | o | o | o | o | 0 | ✅Iter.11 |
@@ -786,3 +786,13 @@ KaTeXエラー0・div balance OK・内部リンク（distributions, nonparametri
 
 **残り約27**: prep1b.js（model-selection, delta-method, path-analysis, factor, arima, acf-pacf済, missing-data, log-linear済…）、ml.js/mva.js（overfitting, svm, roc-auc, kmeans, clustering, regularization済, regression-diagnostics, correlation, factor, clt, markov-chain, monte-carlo, order-statistics, odds-ratio済…）、advanced系、doe系（rsm, ccd済, d-optimal, blocking-designs, rsm-error, robust）、chemo/opls-da。
 **次**: `prep1/model-selection`(2.5)・`prep1/delta-method`(2.5)・`prep1/overfitting`(2.5)。※着手前にクラウド進捗を再確認。
+
+## 2026-07-06 — Iter.58-60（CLT・相関・順序統計量）
+
+**Iter.58 `prep1/clt`** — L2: √n則の導出（分散足し算÷n²）、歪度γ1/√n減衰・ベリーエセーン。L3: 分散有限が必要（コーシー破綻）、独立、歪みで収束遅延（n≥30は対称向け）。検算: 指数の平均歪度 n=5→0.89, n=30→0.37。✅
+**Iter.59 `prep1/correlation`** — L2: r=cosθ（内積）、コーシーシュワルツで[-1,1]、r²=決定係数。L3: 外れ値・範囲制限（[-0.5,0.5]でr0.70→0.25）・シンプソン・相関≠因果。検算: 範囲制限の減衰。✅
+**Iter.60 `prep1/order-statistics`** — L3: iid連続前提（タイ・離散でずれ）、極値外挿（GEV/GPD）の不確実性、中央値の頑健性。L4: 最大値分布の非対称性を明記。
+
+KaTeXエラー0・div balance OK・内部リンク（transformations, continuous-distributions, vectors-matrices, regression, joint-distribution, survival）実在。verify-topics.js 86/86 PASS。
+
+**次に深掘りすべきトピック**: `prep1/overfitting`(2.5, ml.js)・`prep1/svm`(2, advanced2.js)・`prep1/roc-auc`(2, advanced2.js)。※着手前にクラウド進捗を再確認。
