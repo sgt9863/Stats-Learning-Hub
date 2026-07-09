@@ -710,6 +710,55 @@ function sectionProgress(sec) {
  * タイトル・要約・本文（タグ除去）・まとめを対象に前方一致/部分一致で検索する。
  * 索引は起動時に一度だけ構築する。検索 UI は topbar 内で、render() の外側で配線する。 */
 const searchIndex = [];
+/* 用語エイリアス（同義語・英日対応）。1グループ内の語は相互に置換して検索する。
+ * 例: 「ANOVA」で「分散分析」トピックが、「PCA」で「主成分分析」がヒットする。
+ * すべて小文字で記述すること（検索語も小文字化して照合する）。 */
+const SEARCH_ALIASES = [
+  ['分散分析', 'anova', '一元配置', '二元配置'],
+  ['回帰分析', '回帰', 'regression', '線形回帰'],
+  ['主成分分析', '主成分', 'pca'],
+  ['因子分析', 'factor analysis', 'ファクター'],
+  ['ベイズ', 'bayes', 'bayesian', '事後分布', '事前分布'],
+  ['最尤推定', '最尤', 'mle', '尤度'],
+  ['正規分布', 'ガウス', 'gaussian', 'normal'],
+  ['信頼区間', 'confidence interval', '区間推定'],
+  ['仮説検定', '検定', 'test'],
+  ['相関', 'correlation', 'ピアソン', 'pearson'],
+  ['pls', '部分最小二乗', 'plsr'],
+  ['判別分析', '判別', 'lda', '線形判別'],
+  ['クラスタリング', 'クラスター', 'kmeans', 'k-means', 'k平均', 'クラスタ'],
+  ['時系列', 'arima', 'arma', '自己回帰', 'time series'],
+  ['ロジスティック回帰', 'ロジスティック', 'logistic', 'ロジット'],
+  ['分割表', 'カイ二乗', 'カイ2乗', 'chi2', 'chi-square', '独立性の検定'],
+  ['多重比較', 'ボンフェローニ', 'bonferroni', 'tukey', 'テューキー'],
+  ['固有値', '固有ベクトル', 'eigen', 'eigenvalue'],
+  ['実験計画法', 'doe', '応答曲面', 'rsm', '中心複合計画', 'ccd'],
+  ['過学習', 'overfitting', '過剰適合', '汎化'],
+  ['交差検証', 'クロスバリデーション', 'cross validation', 'q2', 'q²'],
+  ['分散', 'variance', 'ばらつき'],
+  ['サンプルサイズ', '検出力', 'power', '標本サイズ', 'サンプル数'],
+  ['ポアソン', 'poisson'],
+  ['二項分布', 'binomial', 'ベルヌーイ', 'bernoulli'],
+  ['一般化線形モデル', 'glm', 'リンク関数'],
+  ['ブートストラップ', 'bootstrap', 'リサンプリング'],
+  ['マルコフ連鎖', 'markov', 'mcmc', 'メトロポリス'],
+  ['欠測', '欠損', 'missing', '多重代入'],
+  ['生存時間', 'survival', 'カプランマイヤー', 'kaplan'],
+  ['t検定', 't分布', 'スチューデント', 'student'],
+];
+// 検索語 t を同義語グループに展開する（t 自身も含む）。1文字語の暴発を避け、
+// 別名への拡張は 2 文字以上のときだけ行う。
+function expandTerm(t) {
+  const set = new Set([t]);
+  if (t.length >= 2) {
+    for (const grp of SEARCH_ALIASES) {
+      if (grp.some(a => a === t || a.startsWith(t) || t.startsWith(a))) {
+        for (const a of grp) set.add(a);
+      }
+    }
+  }
+  return [...set];
+}
 function stripHtml(html) {
   const d = document.createElement('div');
   d.innerHTML = html || '';
@@ -736,16 +785,21 @@ function buildSearchIndex() {
 function runSearch(query) {
   const q = query.trim().toLowerCase();
   if (!q) return [];
-  const terms = q.split(/\s+/).filter(Boolean);
+  const terms = q.split(/\s+/).filter(Boolean).map(t => ({ raw: t, variants: expandTerm(t) }));
   const res = [];
   for (const item of searchIndex) {
     let score = 0, ok = true;
     for (const term of terms) {
-      const inTitle = item.titleLower.includes(term);
-      const inText = item.text.includes(term);
+      let inTitle = false, inText = false, direct = false;
+      for (const v of term.variants) {
+        const t = item.titleLower.includes(v), x = item.text.includes(v);
+        if (t) inTitle = true;
+        if (x) inText = true;
+        if ((t || x) && v === term.raw) direct = true; // 別名一致はスコアを控えめに
+      }
       if (!inTitle && !inText) { ok = false; break; }
-      if (inTitle) score += 10;
-      if (item.titleLower.startsWith(term)) score += 5;
+      if (inTitle) score += direct ? 10 : 6;
+      if (item.titleLower.startsWith(term.raw)) score += 5;
       if (inText) score += 1;
     }
     if (ok) res.push({ item, score });
@@ -753,15 +807,24 @@ function runSearch(query) {
   res.sort((a, b) => b.score - a.score);
   return res.slice(0, 20);
 }
+function searchVariants(query) {
+  const out = [];
+  for (const t of query.trim().toLowerCase().split(/\s+/).filter(Boolean)) {
+    for (const v of expandTerm(t)) if (v && !out.includes(v)) out.push(v);
+  }
+  out.sort((a, b) => b.length - a.length); // 長い語を優先してハイライト
+  return out;
+}
 function searchSnippet(plain, query) {
-  const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const variants = searchVariants(query);
   const lower = plain.toLowerCase();
   let pos = -1;
-  for (const t of terms) { const p = lower.indexOf(t); if (p >= 0 && (pos < 0 || p < pos)) pos = p; }
+  for (const v of variants) { const p = lower.indexOf(v); if (p >= 0 && (pos < 0 || p < pos)) pos = p; }
   if (pos < 0) return escapeHtml(plain.slice(0, 96)) + '…';
   const start = Math.max(0, pos - 28);
-  let snip = escapeHtml(plain.slice(start, pos + 68));
-  for (const t of terms) snip = snip.replace(new RegExp('(' + escapeReg(escapeHtml(t)) + ')', 'ig'), '<mark>$1</mark>');
+  // 一括の正規表現で 1 パス置換（挿入した <mark> タグを再マッチしないため安全）
+  const rx = new RegExp('(' + variants.map(v => escapeReg(escapeHtml(v))).join('|') + ')', 'ig');
+  const snip = escapeHtml(plain.slice(start, pos + 68)).replace(rx, '<mark>$1</mark>');
   return (start > 0 ? '…' : '') + snip + '…';
 }
 
@@ -906,14 +969,31 @@ function homeHtml() {
     '</section></div>';
 }
 
+function firstHref(sec) {
+  const l = topicsBySection(sec);
+  return l.length ? '#/' + sec + '/' + l[0].id : '#/';
+}
 function progressSummaryHtml() {
   const total = window.STATS_TOPICS.length;
   const done = progress.done.size;
   const pct = total ? Math.round((done / total) * 100) : 0;
+  const cards = SECTIONS.map(s => {
+    const pr = sectionProgress(s.id);
+    const p = pr.total ? Math.round((pr.done / pr.total) * 100) : 0;
+    const full = pr.total > 0 && pr.done === pr.total;
+    return '<a class="ps-card' + (full ? ' full' : '') + '" href="' + firstHref(s.id) + '">' +
+      '<span class="ps-card-icon">' + s.icon + '</span>' +
+      '<span class="ps-card-body">' +
+      '<span class="ps-card-title">' + s.title + (full ? ' <span class="ps-card-check">✓</span>' : '') + '</span>' +
+      '<span class="ps-card-mini"><span class="ps-card-mini-fill" style="width:' + p + '%"></span></span>' +
+      '</span>' +
+      '<span class="ps-card-frac">' + pr.done + '/' + pr.total + '</span></a>';
+  }).join('');
   return '<section class="progress-summary">' +
     '<div class="ps-head"><span class="ps-title">📈 学習の進捗</span>' +
     '<span class="ps-frac">' + done + ' / ' + total + ' トピック完了・' + pct + '%</span></div>' +
     '<div class="ps-bar"><div class="ps-fill" style="width:' + pct + '%"></div></div>' +
+    '<div class="ps-cards">' + cards + '</div>' +
     '<p class="ps-note">各トピック下部の「完了にする」ボタンで記録できます。進捗はこのブラウザに保存されます。' +
     (done > 0 ? ' <button type="button" class="ps-reset" id="progress-reset">進捗をリセット</button>' : '') +
     '</p></section>';
