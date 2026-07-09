@@ -18,6 +18,11 @@
 <body>
 <header class="topbar">
   <a class="brand" href="#/"><span class="logo">📊</span> Stats Learning Hub</a>
+  <div class="search" role="search">
+    <input id="search-input" type="search" placeholder="トピックを検索…" autocomplete="off" spellcheck="false" aria-label="トピックを検索" aria-expanded="false" aria-controls="search-results">
+    <kbd class="search-key">/</kbd>
+    <div id="search-results" class="search-results" role="listbox" hidden></div>
+  </div>
 </header>
 <div class="layout">
   <nav id="sidebar" aria-label="トピック一覧"></nav>
