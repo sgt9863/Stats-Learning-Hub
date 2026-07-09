@@ -170,6 +170,15 @@
   };
 
   Q['prep1/delta-method'] = {
+    example: {
+      title: 'デルタ法で逆数の標準誤差を伝える',
+      body: `
+<p>反応速度の推定で、平均滞在時間 $\\bar X$ が $\\bar X\\approx100$、標準誤差 $\\mathrm{SE}(\\bar X)=3$ と得られました。その逆数（速度）$g(\\bar X)=1/\\bar X$ の標準誤差を求めます。</p>
+<div class="step">デルタ法：$\\mathrm{Var}(g(\\hat\\theta))\\approx\\bigl(g'(\\theta)\\bigr)^2\\mathrm{Var}(\\hat\\theta)$。接線の傾きで不確かさを引き伸ばす。</div>
+<div class="step">$g(x)=1/x$ の微分は $g'(x)=-1/x^2$。$x=100$ で $|g'(100)|=1/100^2=10^{-4}$。</div>
+<div class="step">$$ \\mathrm{SE}(1/\\bar X)\\approx|g'(\\mu)|\\cdot\\mathrm{SE}(\\bar X)=10^{-4}\\times3=3\\times10^{-4} $$</div>
+<p>点推定は $1/100=0.0100$、標準誤差 $0.0003$。非線形変換では「$g$ の傾きが急な場所ほど誤差が拡大」——例えば $\\bar X$ が0に近いと $g'=-1/x^2$ が爆発し、逆数の不確かさが極端に大きくなります。</p>`,
+    },
     keypoints: [
       'デルタ法は、推定量 $\\hat\\theta$ を関数 $g$ に通した $g(\\hat\\theta)$ の分散を、接線（1次近似）で伝える。',
       '$\\mathrm{Var}(g(\\hat\\theta))\\approx [g\'(\\theta)]^2\\,\\mathrm{Var}(\\hat\\theta)$。',
@@ -413,6 +422,15 @@ $$ \\frac{(O-E)^2}{E}=\\frac{(30-24)^2}{24}=\\frac{36}{24}=1.5 $$</div>
   };
 
   Q['prep1/multicollinearity'] = {
+    example: {
+      title: 'VIF（分散拡大係数）を計算する',
+      body: `
+<p>2つの説明変数 $x_1,x_2$ の相関が $r=0.95$ のとき、多重共線性の強さを VIF で測ります。</p>
+<div class="step">2変数の場合、変数 $x_1$ を $x_2$ で回帰したときの決定係数は $R_1^2=r^2=0.95^2=0.9025$。</div>
+<div class="step">$$ \\mathrm{VIF}=\\frac{1}{1-R_1^2}=\\frac{1}{1-0.9025}=\\frac{1}{0.0975}\\approx10.3 $$</div>
+<div class="step">VIF が10を超えるので多重共線性は<strong>強い</strong>。係数の分散が単独時の約10倍に膨らんでいる、という意味です。</div>
+<p>相関を上げると VIF は急増します：$r=0.9$ で $5.3$、$r=0.95$ で $10.3$、$r=0.99$ で $50.3$。相関が1に近づくと $X^\\top X$ がほぼ特異になり、係数推定が爆発的に不安定化します。予測はできても個々の係数を深読みしてはいけない、が結論です。</p>`,
+    },
     keypoints: [
       '多重共線性＝説明変数どうしが強く相関し、$X^\\top X$ がほぼ特異になる状態。',
       '係数の分散が膨れ、少しのデータ変化で係数が大きく揺れる（予測は可能でも解釈は危険）。',

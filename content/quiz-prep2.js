@@ -5,6 +5,15 @@
 
   /* ===== 確率と確率変数 ===== */
   Q['prep1/events-probability'] = {
+    example: {
+      title: '加法定理と独立性を確かめる',
+      body: `
+<p>$P(A)=0.5$、$P(B)=0.4$、$P(A\\cap B)=0.2$ のとき、和事象の確率と、$A,B$ が独立かを調べます。</p>
+<div class="step">加法定理：$P(A\\cup B)=P(A)+P(B)-P(A\\cap B)=0.5+0.4-0.2=0.7$。</div>
+<div class="step">独立の判定：$P(A)P(B)=0.5\\times0.4=0.2$。これが $P(A\\cap B)=0.2$ と一致するので<strong>独立</strong>。</div>
+<div class="step">確認：$P(A\\mid B)=\\dfrac{P(A\\cap B)}{P(B)}=\\dfrac{0.2}{0.4}=0.5=P(A)$——$B$ を知っても $A$ の確率が変わらない。</div>
+<p>もし $P(A\\cap B)$ が $0.2$ 以外なら独立ではありません（例：$0.1$ なら負の依存、$0.3$ なら正の依存）。独立は「見た目の重なり」ではなく $P(A\\cap B)=P(A)P(B)$ という<strong>式</strong>で判定します。</p>`,
+    },
     keypoints: [
       '加法定理：$P(A\\cup B)=P(A)+P(B)-P(A\\cap B)$。重なりを引く（包除原理）。',
       '乗法定理：$P(A\\cap B)=P(A)P(B\\mid A)$。独立なら $=P(A)P(B)$。',
@@ -204,6 +213,15 @@
   };
 
   Q['prep1/normal-approx'] = {
+    example: {
+      title: '二項分布を正規近似する（連続修正つき）',
+      body: `
+<p>公正なコインを $n=20$ 回投げて表が13回以上出る確率 $P(X\\ge13)$ を、正規近似で求めます（$X\\sim\\mathrm{Bin}(20,0.5)$）。</p>
+<div class="step">平均 $\\mu=np=10$、分散 $np(1-p)=5$、標準偏差 $\\sigma=\\sqrt5\\approx2.236$。</div>
+<div class="step">連続修正：離散の「13以上」は連続では「12.5以上」。$$ z=\\frac{12.5-10}{2.236}=1.118 $$</div>
+<div class="step">$P(Z\\ge1.118)=1-\\Phi(1.118)\\approx0.132$。</div>
+<p>正確な二項計算では $0.1316$——連続修正つき近似 $0.1318$ はほぼ一致します。<strong>連続修正の $\\pm0.5$ を省くと</strong> $z=(13-10)/2.236=1.342$ で $0.090$ となり過小評価に。$n$ が小さいときほど連続修正の効きが大きい、と確認できます。</p>`,
+    },
     keypoints: [
       '$n$ 大で $\\mathrm{Bin}(n,p)\\approx N(np,\\,np(1-p))$。目安 $np\\ge5$ かつ $n(1-p)\\ge5$。',
       'ポアソンも $\\lambda$ 大で $N(\\lambda,\\lambda)$ に近づく。',
@@ -355,6 +373,15 @@
   };
 
   Q['prep1/fisher-cramer-rao'] = {
+    example: {
+      title: 'ポアソン分布のクラーメル・ラオ下限',
+      body: `
+<p>ポアソン分布 $\\mathrm{Po}(\\lambda)$ から $n=25$ 個の標本を取り、$\\lambda$ を推定します。不偏推定量の分散の理論的下限（CRLB）を求めます。</p>
+<div class="step">対数尤度 $\\ell(\\lambda)=\\sum(x_i\\ln\\lambda-\\lambda)+\\text{const}$。1観測のフィッシャー情報量は $I_1(\\lambda)=-E[\\partial^2\\ell/\\partial\\lambda^2]=\\dfrac{1}{\\lambda}$。</div>
+<div class="step">$n$ 標本では $I_n(\\lambda)=n I_1(\\lambda)=\\dfrac{n}{\\lambda}$。CRLB は $$ \\mathrm{Var}(\\hat\\lambda)\\ge\\frac{1}{I_n(\\lambda)}=\\frac{\\lambda}{n} $$</div>
+<div class="step">$\\lambda=4,\\ n=25$ なら下限は $4/25=0.16$、標準誤差の下限は $\\sqrt{0.16}=0.40$。</div>
+<p>標本平均 $\\bar X$ はポアソンの $\\lambda$ の不偏推定量で $\\mathrm{Var}(\\bar X)=\\lambda/n=0.16$——ちょうど下限に等しく、$\\bar X$ は<strong>有効推定量</strong>（これ以上分散を小さくできない）だと分かります。</p>`,
+    },
     keypoints: [
       'フィッシャー情報量 $I(\\theta)$＝対数尤度の曲率。尖っているほどデータの情報が多い。',
       'クラーメル・ラオ下限：不偏推定量の分散は $\\ge 1/(nI(\\theta))$。これ以上小さくできない。',
