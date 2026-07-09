@@ -30,6 +30,36 @@
   --font: "Inter", "Noto Sans JP", "Hiragino Sans", "Yu Gothic UI", system-ui, -apple-system, sans-serif;
 }
 
+/* ---------- ダークモード ----------
+ * トークンを差し替えるだけで、var(--*) を使うコンポーネントは自動追従する。
+ * ハードコードした明色（スライダー等）は末尾の個別上書きで対応。
+ * グラフ（Canvas/Plotly）の配色は app.js 側の Plot.themes / PlotlyTheme.themes。 */
+:root[data-theme="dark"] {
+  --bg: #0f1013;
+  --panel: #17181d;
+  --surface: #22242c;
+  --ink: #e8e9ee;
+  --ink-2: #f3f3f6;
+  --ink-3: #d3d5dd;
+  --muted: #9aa0b0;
+  --muted-2: #7d8394;
+  --nav-ink: #b7bcc8;
+  --accent: #7c87a1;
+  --accent-deep: #626d86;
+  --accent-soft: #262a34;
+  --accent2: #ff7a52;
+  --line: #2a2c34;
+  --line-strong: #3a3d47;
+  --hover: #232530;
+  --ok: #3fbfa8;
+  --ok-soft: #16332e;
+  --ng: #f0774a;
+  --ng-soft: #34241c;
+  --warn-bg: #2a2512;
+  --warn-line: #4a4222;
+  --warn-bar: #d4a017;
+}
+
 * { box-sizing: border-box; }
 
 html { scroll-behavior: smooth; }
@@ -731,10 +761,36 @@ table.simple th {
 }
 
 /* ---------- モバイル ---------- */
+/* ---------- topbar 右側（検索＋テーマ切替） ---------- */
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-left: auto;
+}
+.theme-toggle {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
 /* ---------- 検索（topbar 内） ---------- */
 .search {
   position: relative;
-  margin-left: auto;
   width: min(340px, 42vw);
 }
 .search-input, #search-input {
@@ -804,7 +860,7 @@ table.simple th {
 }
 .sh-snip mark, .search-hit mark {
   background: #fde68a;
-  color: var(--ink);
+  color: #1b1b1f;
   border-radius: 2px;
   padding: 0 1px;
 }
@@ -1034,10 +1090,34 @@ table.simple th {
 }
 .quiz-reset:hover { background: var(--hover); border-color: var(--accent); }
 
+/* ---------- ダークモード：ハードコード明色の個別上書き ---------- */
+:root[data-theme="dark"] mark { color: #1b1b1f; }
+:root[data-theme="dark"] ::-webkit-scrollbar-thumb { background: #3a3d47; }
+:root[data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: #4a4d59; }
+:root[data-theme="dark"] .ctl label { color: var(--muted); }
+:root[data-theme="dark"] .ctl input[type="range"]::-webkit-slider-runnable-track { background: #33353f; }
+:root[data-theme="dark"] .ctl input[type="range"]::-moz-range-track { background: #33353f; }
+:root[data-theme="dark"] .ctl input[type="range"]::-webkit-slider-thumb { border-color: var(--panel); }
+:root[data-theme="dark"] .ctl input[type="range"]::-moz-range-thumb { border-color: var(--panel); }
+:root[data-theme="dark"] .ctl select { background: #1c1e25; color: var(--ink); }
+:root[data-theme="dark"] .ctl-value { background: var(--accent-soft); color: var(--ink); }
+:root[data-theme="dark"] .btn {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+:root[data-theme="dark"] .btn:hover { background: var(--accent-deep); }
+:root[data-theme="dark"] .btn:active { background: var(--accent); }
+:root[data-theme="dark"] .quiz-choice { background: var(--surface); }
+:root[data-theme="dark"] .quiz-choice:hover:not(:disabled) { border-color: var(--accent); }
+:root[data-theme="dark"] .rel-chip:hover,
+:root[data-theme="dark"] .ps-card:hover { background: var(--hover); }
+
 @media (max-width: 900px) {
   .layout { grid-template-columns: 1fr; }
   .topbar { flex-wrap: wrap; }
-  .search { width: 100%; margin-left: 0; }
+  .topbar-right { width: 100%; }
+  .search { flex: 1; width: auto; }
   .ps-cards { grid-template-columns: 1fr; }
 
   #sidebar {

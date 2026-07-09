@@ -371,6 +371,30 @@ const Plot = window.Plot = {
   colors: ['#4f6df5', '#e4572e', '#2a9d8f', '#f4a261', '#9b5de5', '#577590'],
   gray: '#98a2b3',
   ink: '#1d2433',
+  mode: 'light',
+  themes: {
+    light: {
+      grid: '#edf0f5', gridStrong: '#c7cdd8', tick: '#66708a', axisLabel: '#475467',
+      ink: '#1d2433', gray: '#98a2b3',
+      legendBg: 'rgba(255,255,255,0.93)', legendStroke: '#dfe3ea', legendText: '#344054',
+    },
+    dark: {
+      grid: '#25262f', gridStrong: '#3a3d47', tick: '#9aa0b0', axisLabel: '#aab1c0',
+      ink: '#e6e7ec', gray: '#7f8698',
+      legendBg: 'rgba(23,24,29,0.92)', legendStroke: '#3a3d47', legendText: '#c3c8d4',
+    },
+  },
+  // ダーク時、本文デモが渡す「中立の濃い文字色」だけを明色へ変換する。
+  // 系列色（青・橙・緑…）は表に無いので素通りし、意味のある色は保たれる。
+  darkText: {
+    '#475467': '#aab1c0', '#1d2433': '#e6e7ec', '#344054': '#c3c8d4', '#66708a': '#9aa0b0',
+    '#4a4e5e': '#aab1c0', '#333333': '#d8dae2', '#333': '#d8dae2', '#000000': '#e6e7ec',
+    '#000': '#e6e7ec', '#111': '#e6e7ec', '#101014': '#e6e7ec', '#1c1c22': '#e6e7ec',
+  },
+  mapColor(c) {
+    if (this.mode !== 'dark' || !c) return c;
+    return this.darkText[String(c).toLowerCase()] || c;
+  },
   niceTicks(min, max, n) {
     n = n || 6;
     const span = max - min;
@@ -428,25 +452,26 @@ const Plot = window.Plot = {
         o = o || {};
         const xt = o.xTicks || Plot.niceTicks(xmin, xmax);
         const yt = o.yTicks || Plot.niceTicks(ymin, ymax);
+        const TH = Plot.theme || Plot.themes.light;
         ctx.font = FONT;
-        ctx.strokeStyle = '#edf0f5';
+        ctx.strokeStyle = TH.grid;
         ctx.lineWidth = 1;
         for (const t of xt) { ctx.beginPath(); ctx.moveTo(X(t), pad.top); ctx.lineTo(X(t), pad.top + ih); ctx.stroke(); }
         for (const t of yt) { ctx.beginPath(); ctx.moveTo(pad.left, Y(t)); ctx.lineTo(pad.left + iw, Y(t)); ctx.stroke(); }
-        ctx.strokeStyle = '#c7cdd8';
+        ctx.strokeStyle = TH.gridStrong;
         ctx.beginPath();
         ctx.moveTo(pad.left, pad.top);
         ctx.lineTo(pad.left, pad.top + ih);
         ctx.lineTo(pad.left + iw, pad.top + ih);
         ctx.stroke();
-        ctx.fillStyle = '#66708a';
+        ctx.fillStyle = TH.tick;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         for (const t of xt) ctx.fillText((o.xFmt || Plot.fmtTick)(t), X(t), pad.top + ih + 6);
         ctx.textAlign = 'right';
         ctx.textBaseline = 'middle';
         for (const t of yt) ctx.fillText((o.yFmt || Plot.fmtTick)(t), pad.left - 7, Y(t));
-        ctx.fillStyle = '#475467';
+        ctx.fillStyle = TH.axisLabel;
         if (o.xLabel) {
           ctx.textAlign = 'right';
           ctx.textBaseline = 'bottom';
@@ -461,7 +486,7 @@ const Plot = window.Plot = {
       line(pts, o) {
         o = o || {};
         clipData(() => {
-          ctx.strokeStyle = o.color || Plot.colors[0];
+          ctx.strokeStyle = Plot.mapColor(o.color) || Plot.colors[0];
           ctx.lineWidth = o.width || 2;
           ctx.setLineDash(o.dash || []);
           ctx.globalAlpha = (o.alpha != null) ? o.alpha : 1;
@@ -481,7 +506,7 @@ const Plot = window.Plot = {
         o = o || {};
         clipData(() => {
           const base = Y((o.baseline != null) ? o.baseline : 0);
-          ctx.fillStyle = o.color || Plot.colors[0];
+          ctx.fillStyle = Plot.mapColor(o.color) || Plot.colors[0];
           ctx.globalAlpha = (o.alpha != null) ? o.alpha : 0.15;
           ctx.beginPath();
           ctx.moveTo(X(pts[0][0]), base);
@@ -495,7 +520,7 @@ const Plot = window.Plot = {
       scatter(pts, o) {
         o = o || {};
         clipData(() => {
-          ctx.fillStyle = o.color || Plot.colors[0];
+          ctx.fillStyle = Plot.mapColor(o.color) || Plot.colors[0];
           ctx.globalAlpha = (o.alpha != null) ? o.alpha : 0.85;
           const r = o.r || 3.5;
           for (const q of pts) {
@@ -509,7 +534,7 @@ const Plot = window.Plot = {
       bars(items, o) {
         o = o || {};
         clipData(() => {
-          ctx.fillStyle = o.color || Plot.colors[0];
+          ctx.fillStyle = Plot.mapColor(o.color) || Plot.colors[0];
           ctx.globalAlpha = (o.alpha != null) ? o.alpha : 0.75;
           for (const b of items) {
             const x0 = X(b.x0), x1 = X(b.x1), y = Y(b.y), y0 = Y(0);
@@ -521,7 +546,7 @@ const Plot = window.Plot = {
       vline(x, o) {
         o = o || {};
         clipData(() => {
-          ctx.strokeStyle = o.color || Plot.gray;
+          ctx.strokeStyle = Plot.mapColor(o.color) || Plot.gray;
           ctx.lineWidth = o.width || 1.5;
           ctx.setLineDash(o.dash || [5, 4]);
           ctx.beginPath();
@@ -531,7 +556,7 @@ const Plot = window.Plot = {
           ctx.setLineDash([]);
         });
         if (o.label) {
-          ctx.fillStyle = o.color || Plot.gray;
+          ctx.fillStyle = Plot.mapColor(o.color) || Plot.gray;
           ctx.font = FONT;
           ctx.textAlign = 'left';
           ctx.textBaseline = 'top';
@@ -541,7 +566,7 @@ const Plot = window.Plot = {
       hline(y, o) {
         o = o || {};
         clipData(() => {
-          ctx.strokeStyle = o.color || Plot.gray;
+          ctx.strokeStyle = Plot.mapColor(o.color) || Plot.gray;
           ctx.lineWidth = o.width || 1.5;
           ctx.setLineDash(o.dash || [5, 4]);
           ctx.beginPath();
@@ -551,7 +576,7 @@ const Plot = window.Plot = {
           ctx.setLineDash([]);
         });
         if (o.label) {
-          ctx.fillStyle = o.color || Plot.gray;
+          ctx.fillStyle = Plot.mapColor(o.color) || Plot.gray;
           ctx.font = FONT;
           ctx.textAlign = 'right';
           ctx.textBaseline = 'bottom';
@@ -569,12 +594,12 @@ const Plot = window.Plot = {
           ctx.closePath();
           if (o.fill) {
             ctx.globalAlpha = (o.alpha != null) ? o.alpha : 0.2;
-            ctx.fillStyle = o.fill;
+            ctx.fillStyle = Plot.mapColor(o.fill);
             ctx.fill();
             ctx.globalAlpha = 1;
           }
           if (o.stroke) {
-            ctx.strokeStyle = o.stroke;
+            ctx.strokeStyle = Plot.mapColor(o.stroke);
             ctx.lineWidth = o.width || 1.5;
             ctx.stroke();
           }
@@ -582,7 +607,7 @@ const Plot = window.Plot = {
       },
       arrow(x1, y1, x2, y2, o) {
         o = o || {};
-        const c = o.color || Plot.colors[1];
+        const c = Plot.mapColor(o.color) || Plot.colors[1];
         const ax = X(x1), ay = Y(y1), bx = X(x2), by = Y(y2);
         const ang = Math.atan2(by - ay, bx - ax);
         ctx.strokeStyle = c;
@@ -602,7 +627,7 @@ const Plot = window.Plot = {
       },
       text(x, y, str, o) {
         o = o || {};
-        ctx.fillStyle = o.color || Plot.ink;
+        ctx.fillStyle = Plot.mapColor(o.color) || Plot.ink;
         ctx.font = (o.size || 12) + 'px "Hiragino Sans", "Yu Gothic UI", sans-serif';
         ctx.textAlign = o.align || 'left';
         ctx.textBaseline = o.baseline || 'alphabetic';
@@ -614,8 +639,9 @@ const Plot = window.Plot = {
         for (const it of items) w = Math.max(w, ctx.measureText(it.label).width);
         const bw = w + 36, lh = 19, bh = items.length * lh + 10;
         const bx = pad.left + iw - bw - 8, by = pad.top + 8;
-        ctx.fillStyle = 'rgba(255,255,255,0.93)';
-        ctx.strokeStyle = '#dfe3ea';
+        const TH = Plot.theme || Plot.themes.light;
+        ctx.fillStyle = TH.legendBg;
+        ctx.strokeStyle = TH.legendStroke;
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.rect(bx, by, bw, bh);
@@ -623,13 +649,13 @@ const Plot = window.Plot = {
         ctx.stroke();
         items.forEach((it, i) => {
           const cy = by + 5 + i * lh + lh / 2 - 2;
-          ctx.strokeStyle = it.color;
+          ctx.strokeStyle = Plot.mapColor(it.color);
           ctx.lineWidth = 3;
           ctx.beginPath();
           ctx.moveTo(bx + 8, cy);
           ctx.lineTo(bx + 24, cy);
           ctx.stroke();
-          ctx.fillStyle = '#344054';
+          ctx.fillStyle = TH.legendText;
           ctx.textAlign = 'left';
           ctx.textBaseline = 'middle';
           ctx.fillText(it.label, bx + 30, cy);
@@ -1314,23 +1340,31 @@ function drawDemo() {
 window.PlotlyTheme = {
   colors: ['#4f6df5', '#e4572e', '#2a9d8f', '#f4a261', '#9b5de5', '#577590'],
   config: { displayModeBar: false, responsive: true, doubleClick: 'reset' },
+  mode: 'light',
+  themes: {
+    light: { font: '#344054', grid: '#edf0f5', line: '#c7cdd8', sceneBg: '#f6f7fb', sceneGrid: '#dfe3ea', sceneZero: '#c7cdd8' },
+    dark: { font: '#c3c8d4', grid: '#25262f', line: '#3a3d47', sceneBg: '#16171d', sceneGrid: '#2f313b', sceneZero: '#3a3d47' },
+  },
+  th() { return this.themes[this.mode] || this.themes.light; },
   layout(extra) {
+    const t = window.PlotlyTheme.th();
     const base = {
       margin: { l: 52, r: 16, t: 18, b: 44 },
-      font: { family: '"Hiragino Sans","Yu Gothic UI",sans-serif', size: 12, color: '#344054' },
+      font: { family: '"Hiragino Sans","Yu Gothic UI",sans-serif', size: 12, color: t.font },
       paper_bgcolor: 'rgba(0,0,0,0)',
       plot_bgcolor: 'rgba(0,0,0,0)',
       colorway: window.PlotlyTheme.colors,
       hovermode: 'closest',
       showlegend: false,
-      xaxis: { zeroline: false, gridcolor: '#edf0f5', linecolor: '#c7cdd8' },
-      yaxis: { zeroline: false, gridcolor: '#edf0f5', linecolor: '#c7cdd8' },
+      xaxis: { zeroline: false, gridcolor: t.grid, linecolor: t.line },
+      yaxis: { zeroline: false, gridcolor: t.grid, linecolor: t.line },
     };
     return Object.assign(base, extra || {});
   },
   // 3D シーンの共通見た目
   scene(extra) {
-    const ax = name => ({ title: name, backgroundcolor: '#f6f7fb', gridcolor: '#dfe3ea', showbackground: true, zerolinecolor: '#c7cdd8' });
+    const t = window.PlotlyTheme.th();
+    const ax = name => ({ title: name, backgroundcolor: t.sceneBg, gridcolor: t.sceneGrid, showbackground: true, zerolinecolor: t.sceneZero });
     return Object.assign({
       xaxis: ax('x'), yaxis: ax('y'), zaxis: ax('z'),
       camera: { eye: { x: 1.5, y: 1.5, z: 1.1 } },
@@ -1397,6 +1431,43 @@ function initSearch() {
   window.addEventListener('hashchange', close);
 }
 
+/* ---------- テーマ（ライト/ダーク） ----------
+ * 早期 inline script が data-theme を確定済み。ここではグラフエンジンへ同期し、
+ * トグルボタンを配線する。切替時は現在のデモを再描画する。 */
+const THEME_KEY = 'slh-theme';
+function currentTheme() {
+  return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+}
+function syncGraphTheme(mode) {
+  Plot.mode = mode;
+  Plot.theme = Plot.themes[mode] || Plot.themes.light;
+  Plot.ink = Plot.theme.ink;
+  Plot.gray = Plot.theme.gray;
+  if (window.PlotlyTheme) window.PlotlyTheme.mode = mode;
+}
+function updateThemeToggle(mode) {
+  const btn = document.getElementById('theme-toggle');
+  if (!btn) return;
+  btn.textContent = mode === 'dark' ? '☀️' : '🌙';
+  const label = mode === 'dark' ? 'ライトモードに切り替え' : 'ダークモードに切り替え';
+  btn.setAttribute('aria-label', label);
+  btn.title = label;
+}
+function applyTheme(mode) {
+  document.documentElement.setAttribute('data-theme', mode);
+  try { localStorage.setItem(THEME_KEY, mode); } catch (e) { /* 無視 */ }
+  syncGraphTheme(mode);
+  updateThemeToggle(mode);
+  drawDemo(); // 表示中のデモを新テーマで再描画（Plotly は plot() 再実行で反映）
+}
+function initTheme() {
+  const mode = currentTheme();
+  syncGraphTheme(mode);
+  updateThemeToggle(mode);
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.addEventListener('click', () => applyTheme(currentTheme() === 'dark' ? 'light' : 'dark'));
+}
+
 /* ---------- キーボード操作（← → で前後トピック） ---------- */
 function initKeyboardNav() {
   document.addEventListener('keydown', e => {
@@ -1428,6 +1499,7 @@ window.addEventListener('DOMContentLoaded', () => {
   loadProgress();
   buildSearchIndex();
   buildCrossRefs();
+  initTheme();
   initSearch();
   initKeyboardNav();
   state.route = parseHash();

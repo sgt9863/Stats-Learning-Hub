@@ -4,6 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Stats Learning Hub</title>
+<script>
+/* テーマを描画前に確定してちらつき（FOUC）を防ぐ。保存値がなければ OS 設定に従う。 */
+(function () {
+  try {
+    var m = localStorage.getItem('slh-theme');
+    if (m !== 'dark' && m !== 'light') m = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', m);
+  } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+})();
+</script>
 <meta name="description" content="統計検定2級の知識から、準1級・実験計画法・機械学習・多変量解析までをインタラクティブなグラフで学べる教材サイト">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,10 +28,13 @@
 <body>
 <header class="topbar">
   <a class="brand" href="#/"><span class="logo">📊</span> Stats Learning Hub</a>
-  <div class="search" role="search">
-    <input id="search-input" type="search" placeholder="トピックを検索…" autocomplete="off" spellcheck="false" aria-label="トピックを検索" aria-expanded="false" aria-controls="search-results">
-    <kbd class="search-key">/</kbd>
-    <div id="search-results" class="search-results" role="listbox" hidden></div>
+  <div class="topbar-right">
+    <div class="search" role="search">
+      <input id="search-input" type="search" placeholder="トピックを検索…" autocomplete="off" spellcheck="false" aria-label="トピックを検索" aria-expanded="false" aria-controls="search-results">
+      <kbd class="search-key">/</kbd>
+      <div id="search-results" class="search-results" role="listbox" hidden></div>
+    </div>
+    <button id="theme-toggle" class="theme-toggle" type="button" aria-label="ダークモードに切り替え" title="ダークモードに切り替え">🌙</button>
   </div>
 </header>
 <div class="layout">
