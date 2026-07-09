@@ -705,6 +705,38 @@ function sectionProgress(sec) {
   const done = list.reduce((n, t) => n + (isDone(sec, t.id) ? 1 : 0), 0);
   return { done, total: list.length };
 }
+// カリキュラム順で最初の未完了トピック（なければ null＝全完了）
+function firstIncomplete() {
+  return allTopicsOrdered().find(t => !isDone(t.section, t.id)) || null;
+}
+
+/* ---------- トピック相互リンク（関連トピック用） ----------
+ * 本文中の内部リンク（href="#/sec/id"）から発リンク・被リンクを集計し、
+ * 各トピックの「関連トピック」を導出する。派生・読み取りのみで安全。 */
+const relatedMap = {};
+function buildCrossRefs() {
+  const valid = new Set(window.STATS_TOPICS.map(t => topicKey(t.section, t.id)));
+  const out = {}, back = {};
+  for (const t of window.STATS_TOPICS) {
+    const k = topicKey(t.section, t.id);
+    out[k] = out[k] || new Set();
+    const re = /href="#\/([a-z0-9_-]+)\/([a-z0-9_-]+)"/gi;
+    let m;
+    while ((m = re.exec(t.body || ''))) {
+      const target = m[1] + '/' + m[2];
+      if (target !== k && valid.has(target)) {
+        out[k].add(target);
+        (back[target] = back[target] || new Set()).add(k);
+      }
+    }
+  }
+  for (const t of window.STATS_TOPICS) {
+    const k = topicKey(t.section, t.id);
+    const outArr = [...(out[k] || [])];
+    const backArr = [...(back[k] || [])].filter(x => !out[k].has(x));
+    relatedMap[k] = outArr.concat(backArr).slice(0, 8); // 発リンク優先、最大8件
+  }
+}
 
 /* ---------- 全文検索 ----------
  * タイトル・要約・本文（タグ除去）・まとめを対象に前方一致/部分一致で検索する。
@@ -989,11 +1021,17 @@ function progressSummaryHtml() {
       '</span>' +
       '<span class="ps-card-frac">' + pr.done + '/' + pr.total + '</span></a>';
   }).join('');
+  const first = firstIncomplete();
+  const cta = !first
+    ? '<div class="ps-done-all">🎉 全 ' + total + ' トピック完了！おつかれさまでした。</div>'
+    : '<a class="ps-resume" href="#/' + first.section + '/' + first.id + '">▶ ' +
+      (done > 0 ? '続きから' : 'ここから始める') + '：' + first.title + '</a>';
   return '<section class="progress-summary">' +
     '<div class="ps-head"><span class="ps-title">📈 学習の進捗</span>' +
     '<span class="ps-frac">' + done + ' / ' + total + ' トピック完了・' + pct + '%</span></div>' +
     '<div class="ps-bar"><div class="ps-fill" style="width:' + pct + '%"></div></div>' +
     '<div class="ps-cards">' + cards + '</div>' +
+    cta +
     '<p class="ps-note">各トピック下部の「完了にする」ボタンで記録できます。進捗はこのブラウザに保存されます。' +
     (done > 0 ? ' <button type="button" class="ps-reset" id="progress-reset">進捗をリセット</button>' : '') +
     '</p></section>';
@@ -1057,6 +1095,7 @@ function topicHtml(t) {
     if (content.keypoints && content.keypoints.length) html += keypointsHtml(content.keypoints);
     if (content.quiz && content.quiz.length) html += quizHtml(content.quiz);
   }
+  html += relatedHtml(t);
   const done = isDone(t.section, t.id);
   html += '<div class="done-bar' + (done ? ' is-done' : '') + '">' +
     '<button type="button" class="done-toggle" id="done-toggle">' +
@@ -1066,8 +1105,25 @@ function topicHtml(t) {
   html += '<nav class="pager">' +
     (prev ? '<a class="pg prev" href="#/' + prev.section + '/' + prev.id + '">← ' + prev.title + '</a>' : '<span></span>') +
     (next ? '<a class="pg next" href="#/' + next.section + '/' + next.id + '">' + next.title + ' →</a>' : '<span></span>') +
-    '</nav></article>';
+    '</nav>' +
+    '<p class="pager-hint">キーボードの <kbd>←</kbd> <kbd>→</kbd> でも前後のトピックに移動できます</p>' +
+    '</article>';
   return html;
+}
+
+function relatedHtml(t) {
+  const rel = relatedMap[topicKey(t.section, t.id)] || [];
+  if (!rel.length) return '';
+  const chips = rel.map(rk => {
+    const [sec, id] = rk.split('/');
+    const rt = findTopic(sec, id);
+    if (!rt) return '';
+    const s = SECTIONS.find(x => x.id === sec);
+    return '<a class="rel-chip" href="#/' + sec + '/' + id + '">' +
+      '<span class="rel-sec" aria-hidden="true">' + (s ? s.icon : '') + '</span>' + rt.title +
+      (isDone(sec, id) ? '<span class="rel-check" aria-hidden="true">✓</span>' : '') + '</a>';
+  }).join('');
+  return '<section class="related"><h2>🔗 関連トピック</h2><div class="rel-chips">' + chips + '</div></section>';
 }
 
 /* ---------- 学習コンテンツ（例題・まとめ・確認問題）の描画 ---------- */
@@ -1341,6 +1397,23 @@ function initSearch() {
   window.addEventListener('hashchange', close);
 }
 
+/* ---------- キーボード操作（← → で前後トピック） ---------- */
+function initKeyboardNav() {
+  document.addEventListener('keydown', e => {
+    if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    if (state.route.page !== 'topic') return;
+    const ae = document.activeElement;
+    if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return;
+    const all = allTopicsOrdered();
+    const cur = findTopic(state.route.section, state.route.topic);
+    const i = all.indexOf(cur);
+    if (i < 0) return;
+    const to = e.key === 'ArrowRight' ? all[i + 1] : all[i - 1];
+    if (to) { e.preventDefault(); location.hash = '#/' + to.section + '/' + to.id; }
+  });
+}
+
 /* ---------- 起動 ---------- */
 let resizeTimer = null;
 window.addEventListener('resize', () => {
@@ -1354,7 +1427,9 @@ window.addEventListener('hashchange', () => {
 window.addEventListener('DOMContentLoaded', () => {
   loadProgress();
   buildSearchIndex();
+  buildCrossRefs();
   initSearch();
+  initKeyboardNav();
   state.route = parseHash();
   render();
 });
