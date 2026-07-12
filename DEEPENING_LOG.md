@@ -915,3 +915,16 @@ Iter.1〜86（ローカル＋クラウド並行）で、全86トピックが5層
 **双方向リンク**: model-selection→variable-selection, regression-diagnostics→lack-of-fit, overfitting→Q²(crossval)。査読の「往復リンク」「Q²↔lack-of-fit使い分け」指摘に対応。
 
 **検証**: node --check全ファイル, verify-topics.js 88トピック/88クイズ PASS。3トピックともブラウザでKaTeXエラー0・div balance 1/1・デッドリンク0、デモ境界値で例外なし・視覚確認済み。準1級トピック数 71→74。
+
+## 2026-07-12 全トピック説明監査（audit-depth.js 新設）
+
+**手法**: `tools/audit-depth.js` を新設——全88トピックの本文実質文字数（タグ・数式除去後）、h3見出し数、数式ブロック数、前提/直感/例題/まとめ/クイズの有無を一括計測。中央値1082字。字数下位＋構造フラグ（$$0個・h3≤1・前提✗）の候補18件を全文精読。
+
+**精読結果**: timeseries, testing, gradient, arima, moment-method, mle, events-probability, lda, lln, order-statistics, distributions, pca, conditional-bayes, random-variables, clustering, mgf, multicollinearity, moments-shape の18件はいずれも5層構造が保たれており、字数の短さは数式密度によるもの（監査は数式を除外して数えるため）。構造フラグの大半は表記ゆれによる誤検知（例: multicollinearity の前提✗は「診断/対処」の語で書かれているため）。
+
+**本物の説明不足として3件を増強**:
+1. **prep1/mle**（727→1014字）: 「微分して0とおくと」と結果だけだった導出を展開——対数尤度の具体形、二乗和最小化＝最小二乗との一致、スコア関数の定義と期待値0、尤度の曲率→フィッシャー情報量への接続。対数を取る理由も追記。
+2. **prep1/distributions**（781→1108字）: 「どの統計量がどの分布に従い、どの検定で使うか」の対応表を新設（t←平均/回帰係数、χ²←分散/適合度/独立性、F←分散比/ANOVA）。合言葉「平均にはt、分散にはχ²、分散の比にはF」。二項→ポアソン近似に実務例と正規近似への内部リンク追加。
+3. **prep1/pca**（797→拡張）: 「主成分をいくつ残すか・どう読むか」新設——累積寄与率・スクリープロット（肘）・カイザー基準の3目安と使い分け、負荷量による軸の意味づけ（サイズ因子/対比）、バイプロットの読み方（方向と相関）。
+
+**検証**: node --check・verify-topics.js（88/88）PASS、3ページともブラウザでKaTeXエラー0・新見出しの描画確認・consoleエラー0。
